@@ -324,11 +324,15 @@ class XDOM
 
   end
 
-  # TODO
-  # * round
-  def coverage
+  def res_coverage
     return (@total_dom_residues.to_f/@total_prot_length.to_f)*100
   end
+
+  def prot_coverage
+    protwdoms = (@proteins.values.inject(0) {|sum, p| sum.succ if p.has_domains?})
+    return ( (100/@total_proteins.to_f) * protwdoms.to_f )
+  end
+
 
   # TODO
   def annotate_with_context(xdom)
@@ -435,6 +439,10 @@ class Protein
 
   def domains
     return @domains
+  end
+
+  def has_domains?
+    (@domains.empty?) ? false : true
   end
 
   def total_domains
