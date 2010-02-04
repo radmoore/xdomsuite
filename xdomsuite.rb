@@ -15,8 +15,11 @@ require 'ftools'
 
 # Add to hash method to array
 class Array
-	def to_h
-   	inject({}) { |m, e| m[e[0]] = e[1]; m }
+#	def to_h
+#   	inject({}) { |m, e| m[e[0]] = e[1]; m }
+#  end
+  def to_h
+    h = Hash[*self.flatten]
   end
 end
 
@@ -159,9 +162,32 @@ class XDOM
     @proteins.has_key?(pid)
   end
 
+  # res = resultion (how many dom/prot before 'more' bin is
+  # opened. Collapsed indicates whether we count repeats.
+  # TODO: complete collapsed version
+  # Problem with to_h and sorting
+  def arr_dist(res = 10, collapse = true)
+    dist = Hash.new
+    @proteins.values.each do |p|
+      # TODO: collapse should return instance of protein
+#     p = p.collapse if (collapse)
+      next unless p.has_domains?
+      #puts p.domains.size
+      d_no = p.domains.size
+      if (d_no <= res)
+        dist[d_no] = (dist.has_key?(d_no)) ? dist[d_no].succ : 1
+      else
+        k = ">#{res}"
+        dist[k] = (dist.has_key?(k)) ? dist[k].succ : 1
+      end
+    end
+    return dist.sort{ |a, b| b[1] <=> a[1] }.to_h
+  end
+
+
   def rewind
     @current_prot = 0
-     return
+    return
   end
 
   def domains(did="")
@@ -666,6 +692,7 @@ class Protein
     return
   end
 
+  # TODO: should return protein instance, not array
   def collapse (repunit=2)
     repno = 1
     prev_dom = -1
