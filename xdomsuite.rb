@@ -166,13 +166,12 @@ class XDOM
   # opened. Collapsed indicates whether we count repeats.
   # TODO: complete collapsed version
   # TODO: Problem with to_h and sorting (removed to_h)
-  def arr_dist(res = 10, collapse = true)
+  def arr_dist(collapse = true, res=10)
     dist = Hash.new
     @proteins.values.each do |p|
       # TODO: collapse should return instance of protein
-#     p = p.collapse if (collapse)
+      p = p.collapse if (collapse)
       next unless p.has_domains?
-      #puts p.domains.size
       d_no = p.domains.size
       if (d_no <= res)
         dist[d_no] = (dist.has_key?(d_no)) ? dist[d_no].succ : 1
