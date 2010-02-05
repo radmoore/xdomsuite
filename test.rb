@@ -8,7 +8,7 @@ puts xdom.res_coverage
 puts xdom.prot_coverage
 #xdom.arr_dist.each {|k, v| puts "#{k}, #{v}"}
 puts xdom.arr_dist.inspect
-puts xdom.dom_types.inspect
+puts xdom.collapse.to_s
 #xdom.arr_dist.each {|e| puts e}
 exit
 while(xdom.has_next)

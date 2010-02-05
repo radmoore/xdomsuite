@@ -699,6 +699,8 @@ class Protein
     prev_dom = -1
     rep_doms = Array.new
     doms = Array.new
+    # pid, length = 0, sequence=String.new, species=String.new, comment=String.new, xdom=String.new
+    p = Protein.new(@pid, @sequence, @species, @comment)
     self.domains.each do |d|
       unless (prev_dom == -1)
         if (prev_dom.did == d.did)
@@ -707,13 +709,16 @@ class Protein
         else
           if (repno >= repunit)
 						@collapsed = true
-            c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, " #{repno} collapsed repeat")
+            c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, " #{repno} collapsed repeats")
+            p.add_domain(c_dom)
             doms.push(c_dom)
             rep_doms.clear
           elsif (repno > 1)
             doms += rep_doms.push(prev_dom)
+            rep_doms.push(prev_dom).each {|dom| p.add_domain(dom)}
             rep_doms.clear
           else
+            p.add_domain(prev_dom)
             doms.push(prev_dom)
           end
           repno = 1
@@ -724,13 +729,17 @@ class Protein
     if (repno >= repunit)
 			@collapsed = true
       c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, "#{repno} collapsed repeats")
+      p.add_domain(c_dom)
       doms.push(c_dom)
     elsif (repno > 1)
       doms += rep_doms.push(prev_dom)
+      rep_doms.push(prev_dom).each {|dom| p.add_domain(dom)}
     else
       doms.push(prev_dom)
+      p.add_domain(prev_dom)
     end
-    return doms
+#    return doms
+    return p
   end
 
   # collapse in place
