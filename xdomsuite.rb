@@ -15,12 +15,12 @@ require 'ftools'
 
 # Add to hash method to array
 class Array
-#	def to_h
-#   	inject({}) { |m, e| m[e[0]] = e[1]; m }
-#  end
-  def to_h
-    h = Hash[*self.flatten]
+	def to_h
+   	inject({}) { |m, e| m[e[0]] = e[1]; m }
   end
+#  def to_h
+#    h = Hash[*self.flatten]
+#  end
 end
 
 
@@ -165,7 +165,7 @@ class XDOM
   # res = resultion (how many dom/prot before 'more' bin is
   # opened. Collapsed indicates whether we count repeats.
   # TODO: complete collapsed version
-  # Problem with to_h and sorting
+  # TODO: Problem with to_h and sorting (removed to_h)
   def arr_dist(res = 10, collapse = true)
     dist = Hash.new
     @proteins.values.each do |p|
@@ -181,7 +181,7 @@ class XDOM
         dist[k] = (dist.has_key?(k)) ? dist[k].succ : 1
       end
     end
-    return dist.sort{ |a, b| b[1] <=> a[1] }.to_h
+    return dist
   end
 
 
@@ -215,6 +215,7 @@ class XDOM
 		@proteins.values.each do |p|
 			p.domains.each {|d| types[d.type] = (types.has_key?(d.type)) ? types[d.type].succ : 1 }
 		end
+    puts "type before sorting: "+types.inspect
 		return types.sort{|a, b| b[1] <=> a[1]}.to_h
 	end
 
