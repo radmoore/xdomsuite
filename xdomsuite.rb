@@ -692,13 +692,11 @@ class Protein
     return
   end
 
-  # TODO: should return protein instance, not array
   def collapse (repunit=2)
     repno = 1
     prev_dom = -1
     rep_doms = Array.new
     doms = Array.new
-    # pid, length = 0, sequence=String.new, species=String.new, comment=String.new, xdom=String.new
     p = Protein.new(@pid, @sequence, @species, @comment)
     self.domains.each do |d|
       unless (prev_dom == -1)
@@ -744,7 +742,8 @@ class Protein
   # collapse in place
   def collapse! (repunit=2)
     self.arr_str = String.new
-    doms = self.collapse(repunit)
+    p = self.collapse(repunit)
+    doms = p.domains
     doms.each {|d| self.arr_str += "#{d.did};" }
     self.comment += "Repeats collapsed if found"
     @domains = doms
