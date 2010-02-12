@@ -35,7 +35,7 @@ class Parser
     @file_ext = File.extname(@filename)
     @file_bn = File.basename(@filename, @file_ext)
     @comment = '#'
-    @hits = Hash.new
+    @proteins = Hash.new
   end
 
   attr_reader :filename, :file_ext, :file_bn
@@ -70,14 +70,14 @@ class Parser
 
       next if (eva_ht.to_f >= evalue)
       name = (name) ? hmm_na : hmm_ac
-      @hits[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@hits.has_key?(seq_id))
-      p = @hits[seq_id]
+      @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
+      p = @proteins[seq_id]
       d = Domain.new(env_st.to_i, env_en.to_i, name, eva_ht.to_f, p.pid)
       p.add_domain(d)
 
     end
     hmmout.close
-    return @hits.values
+    return @proteins.values
   end
 
   private
