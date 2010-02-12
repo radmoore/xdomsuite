@@ -654,7 +654,7 @@ class Protein
 			end
 			@deleted = deleted
 		end
-		return
+		return self
   end
 
   def find_domains (did)
