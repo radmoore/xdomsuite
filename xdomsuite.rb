@@ -219,8 +219,9 @@ class XDOM
 	end
 
 
-	def average_domain_no
-		( (@proteins.values.inject(0){ |sum, p| sum += p.domains.size.to_f}) / @proteins.size.to_f )
+	def average_domain_no(num = false)
+		dno = ( (@proteins.values.inject(0){ |sum, p| sum += p.domains.size.to_f}) / @proteins.size.to_f )
+    	return num ? dno : sprintf('%.2f', dno)
 	end
 
   def collapse (repunits=2)
@@ -350,13 +351,15 @@ class XDOM
 
   end
 
-  def res_coverage
-    return (@total_dom_residues.to_f/@total_prot_length.to_f)*100
+  def res_coverage(num = false)
+    cov = (@total_dom_residues.to_f/@total_prot_length.to_f)*100
+    return num ? cov : sprintf('%.2f', cov)
   end
 
-  def prot_coverage
+  def prot_coverage(num = false)
     protwdoms = (@proteins.values.inject(0) {|sum, p| sum.succ if p.has_domains?})
-    return ( (100/@total_proteins.to_f) * protwdoms.to_f )
+    cov = ( (100/@total_proteins.to_f) * protwdoms.to_f )
+#    return num ? cov : sprintf('%2f', cov)
   end
 
 
