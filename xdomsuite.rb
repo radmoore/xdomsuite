@@ -143,7 +143,7 @@ class XDOM
 	end
 
   def get_all_uniq_doms
-    @uniq_domains.keys
+    @domains.keys
   end
 
 	def has_next
