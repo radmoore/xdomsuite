@@ -142,6 +142,10 @@ class XDOM
 		return pfamB.flatten!
 	end
 
+  def get_all_uniq_doms
+    @uniq_domains.keys
+  end
+
 	def has_next
 		return (@current_prot == self.total_proteins) ? false : true
 	end
