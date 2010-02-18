@@ -142,6 +142,12 @@ class XDOM
 		return pfamB.flatten!
 	end
 
+  def get_all_doms
+    doms = Array.new
+    @proteins.values.each {|p| doms << p.domains}
+    return doms.flatten!
+  end
+
   def get_all_uniq_doms
     @domains.keys
   end
