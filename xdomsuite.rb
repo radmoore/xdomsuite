@@ -231,7 +231,7 @@ class XDOM
 
 	def average_domain_no(num = false)
 		dno = ( (@proteins.values.inject(0){ |sum, p| sum += p.domains.size.to_f}) / @proteins.size.to_f )
-    	return num ? dno : sprintf('%.2f', dno)
+   	return num ? dno : sprintf('%.2f', dno)
 	end
 
   def collapse (repunits=2)
@@ -314,29 +314,45 @@ class XDOM
     end
   end
 
-  def get_prot (pid)
-    return (@proteins.member?(pid)) ? @proteins[pid] : false
+  def get_prot(pid)
+    return (@proteins.member?(pid)) ? @proteins[pid] : nil
   end
 
-  def has_arr? (arrstr)
+  def has_arr?(arrstr)
     return (@arrangements.keys.member?(arrstr))
   end
 
 
-  def find_prot_by_arr (arrstr)
-      return (@arrangements.member?(arrstr)) ? @arrangements[arrstr] : false
+  def find_prot_by_arr(arrstr)
+    return (@arrangements.member?(arrstr)) ? @arrangements[arrstr] : false
   end
 
-  def find_prot_by_dom (did)
+  def find_arr_by_dom(did)
     prots = Array.new
-    (@domains[did].collect{|d| d.pid}).uniq.each do |pid|
+    return nil unless @domains.has_key?(did)
+    (@domains[did].collect{|d| d}).uniq.each do |pid|
       prots << self.get_prot(pid)
     end
     return prots
   end
 
+  # get all unique arrangements
+  # with domain did
+  def find_uniq_arr_by_dom(did, collapse=true)
+    uniq = Hash.new
+    prots = self.find_arr_by_dom(did)
+    return nil if prots.nil?
+    prots.each do |p|
+      p = p.collapse if collapse
+      next if uniq.has_key?(p.arr_str)
+      uniq[p.arr_str] = p
+    end
+    return uniq.values
+  end
+
+
   # TODO
-  def find_rsp_cand (xdom2, strict=false)
+  def find_rsp_cand(xdom2, strict=false)
 
     candidates = Array.new
     seen = Hash.new
@@ -464,16 +480,17 @@ class Protein
     @position = Hash.new
 		@deleted = nil
 		@collapsed = false
+    @sep = ';'
     self.set_downstream(false)
     self.set_upstream(false)
     self.set_location(nil, nil, nil, nil)
   end
-  attr_accessor :pid, :length, :sequence, :species, :comment, :arr_str
+  attr_accessor :pid, :length, :sequence, :species, :comment, :arr_str, :sep
 	attr_reader :deleted
 
   def add_domain (domain)
     @domains.push(domain)
-    update_arrangement(domain.did)
+    update_arrstr()
   end
 
   def domains
@@ -524,6 +541,13 @@ class Protein
 	def collapsed?
 		return @collapsed
 	end
+
+  # return string representation
+  # of arrangement, using @sep
+  # as domain separator
+  def arr_st
+    @domains.join(@sep)
+  end
 
 
   def set_location (chromosome, strand, from, to)
@@ -749,17 +773,15 @@ class Protein
       p.add_domain(prev_dom)
     end
 #    return doms
+    p.update_arrstr()
     return p
   end
 
   # collapse in place
   def collapse! (repunit=2)
-    self.arr_str = String.new
     p = self.collapse(repunit)
-    doms = p.domains
-    doms.each {|d| self.arr_str += "#{d.did};" }
     self.comment += "Repeats collapsed if found"
-    @domains = doms
+    @domains = p.domains
   end
 
   # return procentage if res = false
@@ -848,13 +870,13 @@ class Protein
     return (fasta) ? fastaseq : interdom_seqs
   end
 
-  private
+  protected
 
-  # returns the number of domain overlaps
-
-  def update_arrangement (did)
-    @arr_str += "#{did};"
+  def update_arrstr
+    @arr_str = @domains.collect{|d| d.did}.join(@sep)
   end
+
+  private
 
   # do not remove duplicates
   def true_intersection (arr1, arr2)
