@@ -350,7 +350,6 @@ class XDOM
     return uniq.values
   end
 
-
   # TODO
   def find_rsp_cand(xdom2, strict=false)
 
@@ -694,13 +693,19 @@ class Protein
 		return self
   end
 
-  def find_domains (did)
+  def find_domains(did)
     doms = Array.new
     return doms unless self.member?(did)
     @domains.each do |d|
       doms.push(d) if (d.did == id)
     end
     return doms
+  end
+
+  def get_cooc_doms(did)
+    a = Array.new
+    self.domains.each {|d| next if (did == d.did); a << d}
+    return a
   end
 
   def to_s
