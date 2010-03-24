@@ -84,8 +84,6 @@ class Parser
 
   # TODO
   def validate(type)
-    
-
   end
 
 
@@ -122,52 +120,61 @@ class XDOM
     return lines
   end
 
+  # get a list of all uniq
+  # arrangements
+  # returns: array of strings
 	def uniq_arrangements
 		@arrangements.keys.size
 	end
 
+  # get a list of all arrangements
+  # returns: array of strings
   def arrangements
     @arrangements.keys
   end
 
-	def get_all_pfam_A
-		pfamA = Array.new
-		@proteins.values.each {|p| pfamA << p.pfam_A unless p.pfam_A.empty?}
-		return pfamA.flatten!
-	end
-
-	def get_all_pfam_B
-		pfamB = Array.new
-		@proteins.values.each {|p| pfamB << p.pfam_B unless p.pfam_B.empty?}
-		return pfamB.flatten!
-	end
-
-  def get_all_doms
+  # get all domains
+  # in the current xdom (of type type)
+  # returns list of domain objects
+  def get_all_doms(type=nil)
     doms = Array.new
-    @proteins.values.each {|p| doms << p.domains}
+    if type.nil?
+      @proteins.values.each {|p| doms << p.domains}
+    elsif (type == 'A')
+		  @proteins.values.each {|p| pfamA << p.pfam_A unless p.pfam_A.empty?}
+    elsif (type == 'B')
+		  @proteins.values.each {|p| doms << p.pfam_B unless p.pfam_B.empty?}
+    end
     return doms.flatten!
   end
 
+  # get the set of uniq domains
+  # in the current xdom
   def get_all_uniq_doms
     @domains.keys
   end
 
-	def has_next
+  # for use with iterator
+	def has_next?
 		return (@current_prot == self.total_proteins) ? false : true
 	end
 
+  # iterator
   def next_prot
     pid = @proteins.keys[@current_prot]
     @current_prot += 1
     return @proteins[pid]
   end
 
+  # return all collapsed arrangements
 	def get_collapsed_arrangements
 		arr = Array.new
 		@proteins.values.each {|p| arr << p if p.collapsed?}
 		return arr
 	end
 
+  # return true if a pid can be found
+  # in a xdom
   def has_prot?(pid)
     @proteins.has_key?(pid)
   end
@@ -194,6 +201,8 @@ class XDOM
   end
 
 
+  # allows to reset the counter of 
+  # an instance to 0 (for iterator)
   def rewind
     @current_prot = 0
     return
@@ -202,8 +211,10 @@ class XDOM
   def domains(did="")
     alldoms = Array.new
     if (did.empty?)
+      # return all domains
       @domains.values.each {|pid| alldoms.concat(self.get_prot(pid).domains)}
     else
+      # return all instances of did
       @domains[did].each{|pid| alldoms.concat(self.get_prot(pid).find_domains(did))}
     end
     return alldoms
@@ -541,14 +552,6 @@ class Protein
 		return @collapsed
 	end
 
-  # return string representation
-  # of arrangement, using @sep
-  # as domain separator
-  def arr_st
-    @domains.join(@sep)
-  end
-
-
   def set_location (chromosome, strand, from, to)
     @position['location'] = Hash.new unless (@position.has_key?('location'))
     @position['location']['chomosome'] = chromosome
@@ -721,6 +724,10 @@ class Protein
       doms += (d.comment.empty?) ? "\n" : "\t;#{d.comment}\n"
     end
     head+doms
+  end
+
+  def to_arr_s(sep = ';')
+    (self.domains.collect { |d| d.did }).join(sep)
   end
 
   def next_dom
