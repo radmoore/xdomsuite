@@ -196,12 +196,9 @@ class XDOM
     @current_prot = 0
   end
 
-  def initialize(filename, evalue)
-    self.new(filename, evalue, '')
-  end
+  attr_reader :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains
 
-  attr_accessor :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains
-
+  # Returns string representation of self
   def to_s
     lines = String.new
     @proteins.values.each {|p| lines += p.to_s}
@@ -218,71 +215,88 @@ class XDOM
     @arrangements.keys
   end
 
-  # Returns an array of domain objects (of +type+) contained with the XDOM, or an empty array if non were found 
-  def get_all_doms(type=nil)
+  # Returns an array of domain objects
+  # 
+  # * If _did_ is specified, an array of instances of _did_ is returned, or an empty array if non were found
+  # * If _type_ is specified, an array of instances of Domains of _type_ is returned, or an empty array if non were found
+  # * If _did_ AND _type_ are specified, method behaves as if only _did_ was specified
+  def domains(did = nil, type=nil)
     doms = Array.new
-    if type.nil?
-      @proteins.values.each {|p| doms << p.domains}
-    elsif (type == 'A')
-		  @proteins.values.each {|p| pfamA << p.pfam_A unless p.pfam_A.empty?}
-    elsif (type == 'B')
-		  @proteins.values.each {|p| doms << p.pfam_B unless p.pfam_B.empty?}
-    end
-    return doms.flatten!
-  end
-
-  def domains(did="")
-    alldoms = Array.new
-    if (did.empty?)
-      # return all domains
-      @domains.values.each {|pid| alldoms.concat(self.get_prot(pid).domains)}
+    if (did.nil?)
+      if type.nil?
+        @proteins.values.each {|p| doms << p.domains}
+      elsif (type == 'A')
+  		  @proteins.values.each {|p| doms << p.pfam_A unless p.pfam_A.empty?}
+      elsif (type == 'B')
+  		  @proteins.values.each {|p| doms << p.pfam_B unless p.pfam_B.empty?}
+      end
     else
-      # return all instances of did
-      @domains[did].each{|pid| alldoms.concat(self.get_prot(pid).find_domains(did))}
-    end
-    return alldoms
+      @proteins.values.each {|p| doms << p.find_doms(did)}
+    end 
+    return doms.flatten
   end
 
 
-  # get the set of uniq domains
-  # in the current xdom
+  # Returns an array of domain identifiers representing the unique set of domains present in self 
   def get_all_uniq_doms
     @domains.keys
   end
 
-  # for use with iterator
+  # Intended for iteration over proteins in self. Returns _true_ if self
+  # still has a protein, otherwise _false_
 	def has_next?
 		return (@current_prot == self.total_proteins) ? false : true
 	end
 
-  # iterator
+  # Returns the next Protein, or _nil_ if no protein is left in the current
+  # iteration. Proteins are hashed for fast access, hence the order in which the
+  # Protein objects are returned can vary. Uses an internal instance variable to
+  # maintain the current position. The position can be reset using rewind
   def next_prot
     pid = @proteins.keys[@current_prot]
     @current_prot += 1
     return @proteins[pid]
   end
 
-  # return all collapsed arrangements
+  # Resets the position in the current interation to 0 (see next_prot and has_next?)
+  def rewind
+    @current_prot = 0
+    return
+  end
+
+  # Returns an array of Proteins with collapsed repeats, or an empty array if non exist
+  # ( see Protein.collapse )
 	def get_collapsed_arrangements
 		arr = Array.new
 		@proteins.values.each {|p| arr << p if p.collapsed?}
 		return arr
 	end
 
-  # return true if a pid can be found
-  # in a xdom
+  # Return _true_ if _self_ contains a Protein with the id _pid_, otherwise _false
   def has_prot?(pid)
     @proteins.has_key?(pid)
   end
 
-  # res = resultion (how many dom/prot before 'more' bin is
-  # opened. Collapsed indicates whether we count repeats.
-  # TODO: complete collapsed version
-  # TODO: Problem with to_h and sorting (removed to_h)
+  # Returns a Hash containing the frequency of proteins with n domains, where _res_ represents the limit.
+  # If _collapsed_ is _true_, Proteins are collapsed prior to counting (repeats are not counted).
+  #
+  # If XDOM contains four Proteins with the arrangements
+  #
+  #  P1 = [a, b, c, d]
+  #  P2 = [a, b]
+  #  P3 = [a]
+  #  P4 = [a]
+  #
+  # then arr_dist returns a hash of the following form
+  #  { 1 => 2, 2 => 1, 4 => 1 }
+  # and if _res_ = 2
+  #  { 1 => 2, 2 => 1, '>2' => 1 } 
+  #
+  # TODO: 
+  # * Return sorted hash
   def arr_dist(collapse = true, res=10)
     dist = Hash.new
     @proteins.values.each do |p|
-      # TODO: collapse should return instance of protein
       p = p.collapse if (collapse)
       next unless p.has_domains?
       d_no = p.domains.size
@@ -296,26 +310,28 @@ class XDOM
     return dist
   end
 
-
-  # allows to reset the counter of 
-  # an instance to 0 (for iterator)
-  def rewind
-    @current_prot = 0
-    return
-  end
-
-
-	def filter_by_type (type)
+  # Returns an array of all proteins in _self_ after removing all domains that are not of _type_
+  # See Protein.type_filter
+	def filter_by_type(type)
 		prot_filt = Array.new
 		@proteins.values.each {|p| prot_filt << p.type_filter(type)}		
 		return prot_filt
 	end
 
-	def filter_by_type! (type)
+  # In place version of filter_by_type 
+	def filter_by_type!(type)
 		@proteins.values.each {|p| p.type_filter!(type)}		
 	end
 
-	def dom_types
+  # Returns a Hash with the frequency counts for all known _types_ of domains
+  # present in _self_
+  #
+  # Example return:
+  #  { 'A' => 4323, 'B' => 32123 }
+  #
+  # Issues
+  # * Not sure if this method is really useful
+	def dom_types_freq
 		types = Hash.new
 		@proteins.values.each do |p|
 			p.domains.each {|d| types[d.type] = (types.has_key?(d.type)) ? types[d.type].succ : 1 }
@@ -324,13 +340,17 @@ class XDOM
 		return types.sort{|a, b| b[1] <=> a[1]}.to_h
 	end
 
-
+  # Returns the average number of domains present in the proteins of self. If _num_ is _true_, returns a float. If _num_ is _false_, returns a formatted string
 	def average_domain_no(num = false)
 		dno = ( (@proteins.values.inject(0){ |sum, p| sum += p.domains.size.to_f}) / @proteins.size.to_f )
    	return num ? dno : sprintf('%.2f', dno)
 	end
 
-  def collapse (repunits=2)
+  # Returns an Array of Proteins present in _self_, after collapsing repeats. 
+  # * repunits : An integer. If a domain is repeated more than _repunits_ times in a row in a protein, it is collapsed to a single instance
+  #
+  # See Protein.collapse
+  def collapse(repunits=2)
     prot_coll = Array.new
     @proteins.each do |id, prot|
       prot_coll << prot.collapse(repunits)
@@ -338,12 +358,24 @@ class XDOM
     return prot_coll
   end
 
-  def collapse! (repunits=2)
+  # In place version of collapse
+  def collapse!(repunits=2)
     @proteins.values.each {|p| p.collapse!(repunits)}
 		update_arrangements()
 		self.rewind
   end
 
+  # Provides an interface to attach a FASTA file to the Proteins in _self_
+  #
+  # Requires that the IDs of the Proteins in _self_ correspond to the IDs in the FASTA file. IDs are matched 
+  # using the REGEX described in FASTAHEAD
+  # 
+  # If a given ID in FASTA can be found in _self_, the sequence in FASTA is set to the corresponding protein using
+  # the _sequence_ attribute and, for each domain present in protein, the domain sequence is set using domains _sequence_
+  # attribute
+  #
+  # TODO
+  # * return number of successfully attached sequences
   def attach_fasta(fastafile)
     f = File.open(fastafile, "r")
     seq = String.new
@@ -369,60 +401,36 @@ class XDOM
     f.close
   end
 
-  # DONE
-  def attach_location(gffile)
-    prev_line = String.new
-    prev_loc = String.new
-    gff = read_gff(gffile)
-
-    gff.keys.each do |strand|
-      gff[strand].each do |line|
-
-        fields = line.split
-        loc     = fields[0]
-        from    = fields[3]
-        to      = fields[4]
-        cline   = fields[8] + ";#{loc};#{from};#{to};#{strand}"
-        pid     = fields[8].split(';')[0].split('=')[1]
-        p = self.get_prot(pid)
-        darr    = p.arr_str
-
-        p.set_location(loc, strand, from, to)
-
-        unless (prev_line.empty?)
-
-          unless (loc == prev_loc)
-            prev_line = cline
-            prev_loc  = loc
-            next
-          end
-
-          ppid = prev_line.split(';')[0].split('=')[1]
-          # current protein downstream of previous protein
-          self.get_prot(ppid).set_downstream(p.pid)
-          # previous protein upstream of current protein
-          p.set_upstream(ppid)
-
-        end
-        prev_line = cline
-        prev_loc  = loc
-      end
-    end
-  end
-
+  # Returns the protein with the ID _pid_, or nil if such a protein does not exist
   def get_prot(pid)
     return (@proteins.member?(pid)) ? @proteins[pid] : nil
   end
 
-  def has_arr?(arrstr)
+  # Returns _true_ if _self_ contains a protein with the arrangement _arrstr_
+  # 
+  # The _arrstr_ is a string representation of the domains in a protein, where _sep_
+  # signifies the character used to seperate the domain IDs.
+  # 
+  # Example:
+  #  "domainA;domainB;domainC", where sep = ';' (default)
+  def has_arr?(arrstr, sep=';')
+    arrstr.gsub("#{sep}", ';') if (sep != ';')
     return (@arrangements.keys.member?(arrstr))
   end
 
-
-  def find_prot_by_arr(arrstr)
-    return (@arrangements.member?(arrstr)) ? @arrangements[arrstr] : false
+  # Returns an array of Proteins with the arrangement _arrstr_, or _nil_ if none are found
+  #
+  # * arrstr : A string representation of the protein domain arrangement
+  # * sep : The character that used to seperate the domains in the string
+  #
+  # See has_arr?
+  # 
+  def find_prot_by_arr(arrstr, sep=';')
+    arrstr.gsub("#{sep}", ';') if (sep != ';')
+    return (@arrangements.member?(arrstr)) ? @arrangements[arrstr] : nil
   end
 
+  # Returns an array of proteins that contain at least one domain with the ID _did, or _nil_ if none are found
   def find_arr_by_dom(did)
     prots = Array.new
     return nil unless @domains.has_key?(did)
@@ -432,8 +440,10 @@ class XDOM
     return prots
   end
 
-  # get all unique arrangements
-  # with domain did
+  # Returns an array of Proteins that contain _did_. If multiple proteins exist that contain a domain with the ID _did_, then only one 
+  # (representative) Protein is returned. If _collapse_ is true, proteins are collapsed before determining their uniqueness.
+  # 
+  # Returns _nil_ if no protein with domain _did_ is present in _self_
   def find_uniq_arr_by_dom(did, collapse=true)
     uniq = Hash.new
     prots = self.find_arr_by_dom(did)
@@ -446,49 +456,31 @@ class XDOM
     return uniq.values
   end
 
-  # TODO
-  def find_rsp_cand(xdom2, strict=false)
-
-    candidates = Array.new
-    seen = Hash.new
-
-    @arrangements.keys.each do |a1|
-      next if (xdom2.has_arr?(a1))
-      darr = a1.split(';')
-      next if (darr.length == 1)
-      1.upto(darr.length-1) do |i|
-        cand1 = darr[0...i].join(';') << ';'
-        cand2 = darr[i...darr.length].join(';') << ';'
-        # decomposed instances of darr may
-        # *NOT* occur in self (very stringent)
-        next if (strict && ( self.has_arr?(cand1) || self.has_arr?(cand2) ))
-        if ( xdom2.has_arr?(cand1) && xdom2.has_arr?(cand2) )
-          candidates.push([cand1, cand2, a1])
-        end
-      end
-    end
-    
-    return candidates
-
-  end
-
+  # Returns the procentage of amino acid residues that fall into an annotated region (domain). 
+  # If _num_ is _true_ , a float is returned. Otherwise a formatted string is returned.
+  #
+  # TODO:
+  # * check number return
   def res_coverage(num = false)
     cov = (@total_dom_residues.to_f/@total_prot_length.to_f)*100
     return num ? cov : sprintf('%.2f', cov)
   end
 
+  # Returns the procentage of proteins that contain at least one domain. 
+  # If _num_ is _true_ , a float is returned. Otherwise a formatted string is returned.
+  #
+  # TODO:
+  # * check number return
   def prot_coverage(num = false)
     protwdoms = (@proteins.values.inject(0) {|sum, p| sum.succ if p.has_domains?})
     cov = ( (100/@total_proteins.to_f) * protwdoms.to_f )
 #    return num ? cov : sprintf('%2f', cov)
   end
 
-
   # TODO
   def annotate_with_context(xdom)
 
   end
-
 
 private
 
@@ -605,22 +597,27 @@ class Protein
 		(@domains.each {|d| uniq[d] = (uniq.has_key?(d)) ? uniq[d].succ! : 1 }).size
 	end
 
+  # Wrapper for type_filter. Returns an array of Domain objects of type PfamA, or an empty array if no PfamA domains are found 
 	def pfam_A
 		p = self.type_filter('A')
 		return p.domains
 	end
 
+  # Wrapper for type_filter. Returns an array of Domain objects of type PfamB, or an empty array if no PfamB domains are found
 	def pfam_B
 		p = self.type_filter('B')
 		return p.domains
 	end
 
-	def type_filter (type)
+  # Returns a copy of _self_, containing only Domains of _type_. If no Domain objects of _type_ are present in _self_,
+  # then self.domains will return an empty array
+	def type_filter(type)
 		p = Protein.new(@pid, @length, @sequence, @species, @comment)
 		@domains.each {|d| p.add_domain(d) if (d.type == type)}
 		return p
 	end
 
+  # In place variant of self.type_filter
 	def type_filter! (type)
 		doms_filtered = Array.new
 		@domains.each {|d| doms_filtered << d if (d.type == type) }
@@ -781,7 +778,7 @@ class Protein
 		return self
   end
 
-  def find_domains(did)
+  def find_doms(did)
     doms = Array.new
     return doms unless self.member?(did)
     @domains.each do |d|
