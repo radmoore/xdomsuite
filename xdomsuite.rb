@@ -1,15 +1,38 @@
 #!/usr/bin/ruby -w
-##!/usr/bin/ruby1.9 -w
 
-# XDOMSUITE
-# rv 2.4a
-
-# TODO
-# * Use syteny to refine fusion candidates ->
+#==xdomsuite - A suite of simple procedures for working with domain data
+# 
+# The xdomsuite contains 2 primary classes, and two 'utility' classes. The way I use these classes, is that I create either a xdom object
+# using XDOM or a collection of Protein objects using Parser. That is, I do not use the classes Protein or Domain directly (hence utility).
+# 
+# But one could, if one wanted.
+# 
+#===Primary classes
+#
+#
+# * Parser: Parse hmmer output to proteins and domains
+# * XDOM: Parse xdom files to proteome-like objects
+# 
+#===Utility classes
+#
+# * Protein: Create protein objects
+# * Domain: Create domain objects
+# 
+#==== Usage
+#
+#===Open Issues /  TODOs
+#
+# * Use syteny to refine fusion candidates
 # * include Enumerable (and overwrite each etc)
 # * Marshalling?
 # * extend to allow hmmoutput
 # * if protein length unknown, take stop pos of last domain as length
+#
+#===Credits
+#Andrew D. Moore (radmoore@uni-muenster.de)
+#
+#===Version
+# rv 2.4a
 
 require 'ftools'
 
@@ -25,11 +48,25 @@ end
 
 
 
-# CLASS: PARSER
+#=== Parser
+#Class for creating protein and domain objects directly from hmmer output. 
+#Once called, Parser returns an Array of protein objects
+#
+#==== Usage
+# 
+# require 'xdomsuite'
+# 
+# parser = Parser.new('/path/to/file') 
+# proteins = parser.pfamscan(0.0001)
+# proteins.each {|p| puts p.pid }
+# 
+#====Open Issues /  TODOs
+# 
+# * Currently only supports custom pfamscan output 
+# * Check file type validity
 class Parser
 
-  # TODO
-  # add native hmmer types
+  # Returns an instance of the Parser class.
   def initialize(filename)
     @filename = filename
     @file_ext = File.extname(@filename)
@@ -41,9 +78,29 @@ class Parser
   attr_reader :filename, :file_ext, :file_bn
   attr_accessor :comment
 
-  # <length> <seq id> <alignment start> <alignment end> <envelope start> <envelope end> <hmm acc> <hmm name> <type> 
-  # <hmm start> <hmm end> <hmm length> <bit score> <E-value> <significance> <clan> <predicted_active_site_residues>
-  # * custom added
+  # Calls the pfamscan parser method (new version), and returns an Array of protein objects. Domain must have
+  # a score better than +evalue+ before they are included. If +name+ is +true+, then the domain name is used.
+  # Otherwise, the domain accession number is used
+  # 
+  # The fields in the pfam_scan output file are
+  # 
+  # * length (custom filed to maintain protein length)
+  # * seq id
+  # * alignment start
+  # * alignment end
+  # * envelope start
+  # * envelope end
+  # * hmm acc
+  # * hmm name
+  # * type 
+  # * hmm start
+  # * hmm end
+  # * hmm length
+  # * bit score
+  # * E-value
+  # * significance
+  # * Clan
+  # * Predicted_active_site_residues
   def pfamscan(evalue=10, name=true)
     hmmout = File.open(@filename, "r")
     p = nil
@@ -82,21 +139,47 @@ class Parser
 
   private
 
-  # TODO
+  # Check file type for validity
   def validate(type)
   end
 
-
 end
 
-# CLASS: XDOM
+#=== XDOM
+#Class for creating a proteome-like object from a xdom file. Provides methods for iteration and filtering, sequence association
+#collapsing repeats, retreiving statistics etc 
+#
+#==== Usage
+# 
+# require 'xdomsuite'
+#
+# xdom = XDOM.new(ARGV[0], 0.001)
+# puts xdom.res_coverage
+# puts xdom.prot_coverage
+# 
+# while(xdom.has_next)
+#  p = xdom.next_prot
+#  next unless p.has_domains?
+#  p.domains.each {|d| puts d.did}
+# end
+#
+#
+#====Open Issues /  TODOs
+# 
+# * Currently only supports custom pfamscan output 
+# * Check file type validity
 class XDOM
 
   HEADERre = /^>(\S+)\s+(\d+)$/
   FASTAHEAD = /^>(\S+)\s+.+/
   include Enumerable
 
-  def initialize(filename, evalue, species=String.new)
+  # Returns a new xdom object containing proteins and domains
+  #
+  # * +filename+ : path to the xdomfile
+  # * +evalue+   : annotation threshold
+  # * +species+  : name of the proteome (OPTIONAL)
+  def initialize(filename, evalue, species = "")
     @filename = filename
     @species  = (species.empty?) ? get_species(filename) : species
     @evalue   = evalue
@@ -112,6 +195,11 @@ class XDOM
     @uniq_domains   = @domains.keys.size
     @current_prot = 0
   end
+
+  def initialize(filename, evalue)
+    self.new(filename, evalue, '')
+  end
+
   attr_accessor :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains
 
   def to_s
@@ -120,22 +208,17 @@ class XDOM
     return lines
   end
 
-  # get a list of all uniq
-  # arrangements
-  # returns: array of strings
+  # Returns a list of unique arrangements as an array of strings
 	def uniq_arrangements
 		@arrangements.keys.size
 	end
 
-  # get a list of all arrangements
-  # returns: array of strings
+  # Returns a list of all arrangements as an array of strings
   def arrangements
     @arrangements.keys
   end
 
-  # get all domains
-  # in the current xdom (of type type)
-  # returns list of domain objects
+  # Returns an array of domain objects (of +type+) contained with the XDOM, or an empty array if non were found 
   def get_all_doms(type=nil)
     doms = Array.new
     if type.nil?
@@ -147,6 +230,19 @@ class XDOM
     end
     return doms.flatten!
   end
+
+  def domains(did="")
+    alldoms = Array.new
+    if (did.empty?)
+      # return all domains
+      @domains.values.each {|pid| alldoms.concat(self.get_prot(pid).domains)}
+    else
+      # return all instances of did
+      @domains[did].each{|pid| alldoms.concat(self.get_prot(pid).find_domains(did))}
+    end
+    return alldoms
+  end
+
 
   # get the set of uniq domains
   # in the current xdom
@@ -208,17 +304,6 @@ class XDOM
     return
   end
 
-  def domains(did="")
-    alldoms = Array.new
-    if (did.empty?)
-      # return all domains
-      @domains.values.each {|pid| alldoms.concat(self.get_prot(pid).domains)}
-    else
-      # return all instances of did
-      @domains[did].each{|pid| alldoms.concat(self.get_prot(pid).find_domains(did))}
-    end
-    return alldoms
-  end
 
 	def filter_by_type (type)
 		prot_filt = Array.new
