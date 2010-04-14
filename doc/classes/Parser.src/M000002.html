@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+  <title>pfamscan (Parser)</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
+</head>
+<body class="standalone-code">
+  <pre><span class="ruby-comment cmt"># File xdomsuite.rb, line 104</span>
+  <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">pfamscan</span>(<span class="ruby-identifier">evalue</span>=<span class="ruby-value">10</span>, <span class="ruby-identifier">name</span>=<span class="ruby-keyword kw">true</span>)
+    <span class="ruby-identifier">hmmout</span> = <span class="ruby-constant">File</span>.<span class="ruby-identifier">open</span>(<span class="ruby-ivar">@filename</span>, <span class="ruby-value str">&quot;r&quot;</span>)
+    <span class="ruby-identifier">p</span> = <span class="ruby-keyword kw">nil</span>
+    <span class="ruby-keyword kw">while</span>(<span class="ruby-identifier">line</span> = <span class="ruby-identifier">hmmout</span>.<span class="ruby-identifier">gets</span>)
+      <span class="ruby-keyword kw">next</span> <span class="ruby-keyword kw">if</span> (<span class="ruby-node">/^#{@comment}/</span>.<span class="ruby-identifier">match</span>(<span class="ruby-identifier">line</span>) <span class="ruby-operator">||</span> <span class="ruby-regexp re">/^$/</span>.<span class="ruby-identifier">match</span>(<span class="ruby-identifier">line</span>))
+      <span class="ruby-identifier">line</span>.<span class="ruby-identifier">chomp!</span>
+      (<span class="ruby-identifier">seq_le</span>, <span class="ruby-comment cmt"># sequence length, custom field</span>
+                         <span class="ruby-identifier">seq_id</span>, <span class="ruby-comment cmt"># seq  id</span>
+       <span class="ruby-identifier">aln_st</span>, <span class="ruby-comment cmt"># alignment start</span>
+       <span class="ruby-identifier">aln_en</span>, <span class="ruby-comment cmt"># alignment end</span>
+       <span class="ruby-identifier">env_st</span>, <span class="ruby-comment cmt"># envelope start</span>
+       <span class="ruby-identifier">env_en</span>, <span class="ruby-comment cmt"># envelope end</span>
+       <span class="ruby-identifier">hmm_ac</span>, <span class="ruby-comment cmt"># hmm acc</span>
+       <span class="ruby-identifier">hmm_na</span>, <span class="ruby-comment cmt"># hmm name</span>
+       <span class="ruby-identifier">dom_ty</span>, <span class="ruby-comment cmt"># type</span>
+       <span class="ruby-identifier">hmm_st</span>, <span class="ruby-comment cmt"># hmm start</span>
+       <span class="ruby-identifier">hmm_en</span>, <span class="ruby-comment cmt"># hmm end</span>
+       <span class="ruby-identifier">hmm_ln</span>, <span class="ruby-comment cmt"># hmm length</span>
+       <span class="ruby-identifier">bit_sc</span>, <span class="ruby-comment cmt"># bit score</span>
+       <span class="ruby-identifier">eva_ht</span>, <span class="ruby-comment cmt"># e-value</span>
+       <span class="ruby-identifier">sig_ht</span>, <span class="ruby-comment cmt"># significance</span>
+       <span class="ruby-identifier">cla_id</span>, <span class="ruby-comment cmt"># clan</span>
+       <span class="ruby-identifier">pre_as</span>) = <span class="ruby-identifier">line</span>.<span class="ruby-identifier">split</span>  <span class="ruby-comment cmt"># predicted_active_site_residues</span>
+
+      <span class="ruby-keyword kw">next</span> <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">eva_ht</span>.<span class="ruby-identifier">to_f</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-identifier">evalue</span>)
+      <span class="ruby-identifier">name</span> = (<span class="ruby-identifier">name</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">hmm_na</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">hmm_ac</span>
+      <span class="ruby-ivar">@proteins</span>[<span class="ruby-identifier">seq_id</span>] = <span class="ruby-constant">Protein</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">seq_id</span>, <span class="ruby-identifier">seq_le</span>.<span class="ruby-identifier">to_i</span>) <span class="ruby-keyword kw">unless</span>(<span class="ruby-ivar">@proteins</span>.<span class="ruby-identifier">has_key?</span>(<span class="ruby-identifier">seq_id</span>))
+      <span class="ruby-identifier">p</span> = <span class="ruby-ivar">@proteins</span>[<span class="ruby-identifier">seq_id</span>]
+      <span class="ruby-identifier">d</span> = <span class="ruby-constant">Domain</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">env_st</span>.<span class="ruby-identifier">to_i</span>, <span class="ruby-identifier">env_en</span>.<span class="ruby-identifier">to_i</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">eva_ht</span>.<span class="ruby-identifier">to_f</span>, <span class="ruby-identifier">p</span>.<span class="ruby-identifier">pid</span>)
+      <span class="ruby-identifier">p</span>.<span class="ruby-identifier">add_domain</span>(<span class="ruby-identifier">d</span>)
+
+    <span class="ruby-keyword kw">end</span>
+    <span class="ruby-identifier">hmmout</span>.<span class="ruby-identifier">close</span>
+    <span class="ruby-keyword kw">return</span> <span class="ruby-ivar">@proteins</span>.<span class="ruby-identifier">values</span>
+  <span class="ruby-keyword kw">end</span></pre>
+</body>
+</html>

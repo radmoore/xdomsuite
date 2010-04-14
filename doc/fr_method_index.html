@@ -1,0 +1,98 @@
+
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!--
+
+    Methods
+
+  -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Methods</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link rel="stylesheet" href="rdoc-style.css" type="text/css" />
+  <base target="docwin" />
+</head>
+<body>
+<div id="index">
+  <h1 class="section-bar">Methods</h1>
+  <div id="index-entries">
+    <a href="classes/Protein.html#M000008">add_domain (Protein)</a><br />
+    <a href="classes/XDOM.html#M000072">annotate_with_context (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000057">arr_dist (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000049">arrangements (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000064">attach_fasta (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000061">average_domain_no (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000062">collapse (XDOM)</a><br />
+    <a href="classes/Protein.html#M000035">collapse (Protein)</a><br />
+    <a href="classes/XDOM.html#M000063">collapse! (XDOM)</a><br />
+    <a href="classes/Protein.html#M000036">collapse! (Protein)</a><br />
+    <a href="classes/Protein.html#M000018">collapsed? (Protein)</a><br />
+    <a href="classes/Protein.html#M000037">coverage (Protein)</a><br />
+    <a href="classes/XDOM.html#M000060">dom_types_freq (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000050">domains (XDOM)</a><br />
+    <a href="classes/Protein.html#M000009">domains (Protein)</a><br />
+    <a href="classes/Protein.html#M000026">downstream_arr (Protein)</a><br />
+    <a href="classes/Protein.html#M000038">edit_distance (Protein)</a><br />
+    <a href="classes/Domain.html#M000044">fasta_seq (Domain)</a><br />
+    <a href="classes/XDOM.html#M000058">filter_by_type (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000059">filter_by_type! (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000068">find_arr_by_dom (XDOM)</a><br />
+    <a href="classes/Protein.html#M000029">find_doms (Protein)</a><br />
+    <a href="classes/XDOM.html#M000067">find_prot_by_arr (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000069">find_uniq_arr_by_dom (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000051">get_all_uniq_doms (XDOM)</a><br />
+    <a href="classes/Protein.html#M000023">get_chromosome (Protein)</a><br />
+    <a href="classes/XDOM.html#M000055">get_collapsed_arrangements (XDOM)</a><br />
+    <a href="classes/Protein.html#M000030">get_cooc_doms (Protein)</a><br />
+    <a href="classes/Protein.html#M000041">get_interdom_seq (Protein)</a><br />
+    <a href="classes/Protein.html#M000040">get_interdoms (Protein)</a><br />
+    <a href="classes/XDOM.html#M000065">get_prot (XDOM)</a><br />
+    <a href="classes/Protein.html#M000024">get_strand (Protein)</a><br />
+    <a href="classes/XDOM.html#M000066">has_arr? (XDOM)</a><br />
+    <a href="classes/Protein.html#M000010">has_domains? (Protein)</a><br />
+    <a href="classes/XDOM.html#M000052">has_next? (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000056">has_prot? (XDOM)</a><br />
+    <a href="classes/Protein.html#M000039">jaccard_dist (Protein)</a><br />
+    <a href="classes/Protein.html#M000022">location (Protein)</a><br />
+    <a href="classes/Protein.html#M000017">member? (Protein)</a><br />
+    <a href="classes/Protein.html#M000007">new (Protein)</a><br />
+    <a href="classes/Indicator.html#M000004">new (Indicator)</a><br />
+    <a href="classes/XDOM.html#M000046">new (XDOM)</a><br />
+    <a href="classes/Domain.html#M000043">new (Domain)</a><br />
+    <a href="classes/Parser.html#M000001">new (Parser)</a><br />
+    <a href="classes/Protein.html#M000033">next_dom (Protein)</a><br />
+    <a href="classes/XDOM.html#M000053">next_prot (XDOM)</a><br />
+    <a href="classes/Protein.html#M000027">overlaps? (Protein)</a><br />
+    <a href="classes/Protein.html#M000013">pfam_A (Protein)</a><br />
+    <a href="classes/Protein.html#M000014">pfam_B (Protein)</a><br />
+    <a href="classes/Parser.html#M000002">pfamscan (Parser)</a><br />
+    <a href="classes/XDOM.html#M000071">prot_coverage (XDOM)</a><br />
+    <a href="classes/XDOM.html#M000070">res_coverage (XDOM)</a><br />
+    <a href="classes/Protein.html#M000028">resolve_overlaps (Protein)</a><br />
+    <a href="classes/XDOM.html#M000054">rewind (XDOM)</a><br />
+    <a href="classes/Protein.html#M000034">rewind (Protein)</a><br />
+    <a href="classes/Protein.html#M000021">set_downstream (Protein)</a><br />
+    <a href="classes/Protein.html#M000019">set_location (Protein)</a><br />
+    <a href="classes/Protein.html#M000020">set_upstream (Protein)</a><br />
+    <a href="classes/Indicator.html#M000005">start (Indicator)</a><br />
+    <a href="classes/Indicator.html#M000006">stop (Indicator)</a><br />
+    <a href="classes/Protein.html#M000032">to_arr_s (Protein)</a><br />
+    <a href="classes/Array.html#M000003">to_h (Array)</a><br />
+    <a href="classes/XDOM.html#M000047">to_s (XDOM)</a><br />
+    <a href="classes/Protein.html#M000031">to_s (Protein)</a><br />
+    <a href="classes/Domain.html#M000045">to_s (Domain)</a><br />
+    <a href="classes/Protein.html#M000011">total_domains (Protein)</a><br />
+    <a href="classes/Protein.html#M000015">type_filter (Protein)</a><br />
+    <a href="classes/Protein.html#M000016">type_filter! (Protein)</a><br />
+    <a href="classes/XDOM.html#M000048">uniq_arrangements (XDOM)</a><br />
+    <a href="classes/Protein.html#M000012">uniq_doms (Protein)</a><br />
+    <a href="classes/Protein.html#M000042">update_arrstr (Protein)</a><br />
+    <a href="classes/Protein.html#M000025">upstream_arr (Protein)</a><br />
+  </div>
+</div>
+</body>
+</html>

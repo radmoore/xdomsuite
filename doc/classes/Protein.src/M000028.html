@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+  <title>resolve_overlaps (Protein)</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
+</head>
+<body class="standalone-code">
+  <pre><span class="ruby-comment cmt"># File xdomsuite.rb, line 694</span>
+  <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">resolve_overlaps</span>(<span class="ruby-identifier">mode</span>=<span class="ruby-keyword kw">nil</span>)
+    <span class="ruby-identifier">raise</span> <span class="ruby-value str">&quot;Please select overlap resolution mode: AE=0, AC=1, BE=2, BC=3&quot;</span> <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">mode</span>.<span class="ruby-identifier">nil?</span>)
+    <span class="ruby-identifier">raise</span> <span class="ruby-value str">&quot;Invalid resolution mode: AE=0, AC=1, BE=2, BC=3&quot;</span> <span class="ruby-keyword kw">unless</span> ((<span class="ruby-value">0</span> <span class="ruby-operator">&lt;=</span> <span class="ruby-identifier">mode</span>) <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">mode</span> <span class="ruby-operator">&lt;=</span> <span class="ruby-value">3</span>))
+
+    <span class="ruby-identifier">pos</span> = <span class="ruby-value">0</span>
+    <span class="ruby-identifier">pdom</span> = <span class="ruby-keyword kw">nil</span>
+    <span class="ruby-identifier">deleted</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+    <span class="ruby-keyword kw">until</span> (<span class="ruby-identifier">pos</span> <span class="ruby-operator">==</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">total_domains</span>)
+      <span class="ruby-identifier">cdom</span> = <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>[<span class="ruby-identifier">pos</span>]
+      <span class="ruby-keyword kw">if</span> ( <span class="ruby-identifier">pdom</span>.<span class="ruby-identifier">nil?</span> <span class="ruby-operator">||</span> (<span class="ruby-identifier">pdom</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">cdom</span>) <span class="ruby-operator">||</span> (<span class="ruby-identifier">cdom</span>.<span class="ruby-identifier">from</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">pdom</span>.<span class="ruby-identifier">to</span>) )
+        <span class="ruby-identifier">pdom</span> = <span class="ruby-identifier">cdom</span>
+        <span class="ruby-identifier">pos</span> <span class="ruby-operator">+=</span> <span class="ruby-value">1</span>
+        <span class="ruby-keyword kw">next</span>
+      <span class="ruby-keyword kw">end</span>
+      <span class="ruby-keyword kw">unless</span> (<span class="ruby-identifier">cdom</span>.<span class="ruby-identifier">type</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">pdom</span>.<span class="ruby-identifier">type</span>)
+        <span class="ruby-keyword kw">if</span> (((<span class="ruby-identifier">mode</span> <span class="ruby-operator">==</span> <span class="ruby-value">0</span>)<span class="ruby-operator">||</span>(<span class="ruby-identifier">mode</span> <span class="ruby-operator">==</span> <span class="ruby-value">1</span>)))
+          <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">cdom</span>.<span class="ruby-identifier">type</span> <span class="ruby-operator">==</span> <span class="ruby-value str">'B'</span>)
+            <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">cdom</span>)
+            <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">cdom</span>)
+          <span class="ruby-keyword kw">else</span>
+            <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">pdom</span>)
+            <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">pdom</span>)
+          <span class="ruby-keyword kw">end</span>
+         <span class="ruby-keyword kw">elsif</span> ( (<span class="ruby-identifier">mode</span> <span class="ruby-operator">==</span> <span class="ruby-value">2</span>)<span class="ruby-operator">||</span>(<span class="ruby-identifier">mode</span> <span class="ruby-operator">==</span> <span class="ruby-value">3</span>) )
+          <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">cdom</span>.<span class="ruby-identifier">type</span> <span class="ruby-operator">==</span> <span class="ruby-value str">'A'</span>)
+            <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">cdom</span>)
+            <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">cdom</span>)
+          <span class="ruby-keyword kw">else</span>
+            <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">pdom</span>)
+            <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">pdom</span>)
+          <span class="ruby-keyword kw">end</span>
+        <span class="ruby-keyword kw">end</span>
+        <span class="ruby-identifier">pos</span> = <span class="ruby-value">0</span>
+        <span class="ruby-identifier">pdom</span> = <span class="ruby-keyword kw">nil</span>
+        <span class="ruby-keyword kw">next</span>
+      <span class="ruby-keyword kw">end</span>
+                        <span class="ruby-comment cmt"># in mode 1, 3: if length is equal, no conflict resolution possible</span>
+                        <span class="ruby-comment cmt"># than resolve by evalue anyways</span>
+      <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">mode</span><span class="ruby-operator">%</span><span class="ruby-value">2</span> <span class="ruby-operator">==</span> <span class="ruby-value">0</span> <span class="ruby-operator">||</span> (<span class="ruby-identifier">cdom</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">pdom</span>.<span class="ruby-identifier">length</span>))
+        <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">cdom</span>.<span class="ruby-identifier">evalue</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-identifier">pdom</span>.<span class="ruby-identifier">evalue</span>)
+          <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">cdom</span>)
+          <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">cdom</span>)
+        <span class="ruby-keyword kw">else</span>
+          <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">pdom</span>)
+          <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">pdom</span>)
+        <span class="ruby-keyword kw">end</span>
+      <span class="ruby-keyword kw">else</span>
+        <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">cdom</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">pdom</span>.<span class="ruby-identifier">length</span>)
+          <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">cdom</span>)
+          <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">cdom</span>)
+        <span class="ruby-keyword kw">else</span>
+          <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">pdom</span>)
+          <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">pdom</span>)
+        <span class="ruby-keyword kw">end</span>
+      <span class="ruby-keyword kw">end</span>
+      <span class="ruby-identifier">pos</span> = <span class="ruby-value">0</span>
+      <span class="ruby-identifier">pdom</span> = <span class="ruby-keyword kw">nil</span>
+    <span class="ruby-keyword kw">end</span>
+                <span class="ruby-comment cmt"># if there are interdomainic regions...</span>
+                <span class="ruby-keyword kw">unless</span> (<span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">get_interdoms</span>.<span class="ruby-identifier">keys</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">==</span> <span class="ruby-value">0</span>)
+        <span class="ruby-identifier">pdom</span> = <span class="ruby-keyword kw">nil</span>
+        <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">each_index</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">pos</span><span class="ruby-operator">|</span>
+        <span class="ruby-identifier">cdom</span> = <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>[<span class="ruby-identifier">pos</span>]
+        <span class="ruby-keyword kw">unless</span> (<span class="ruby-identifier">pdom</span>.<span class="ruby-identifier">nil?</span>)
+                                        <span class="ruby-comment cmt"># try to fit some of the removed domains</span>
+                                        <span class="ruby-comment cmt"># into the final arrangement</span>
+                <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">remdom</span><span class="ruby-operator">|</span>
+                               <span class="ruby-keyword kw">next</span> <span class="ruby-keyword kw">unless</span> ((<span class="ruby-identifier">remdom</span>.<span class="ruby-identifier">from</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">pdom</span>.<span class="ruby-identifier">to</span>) <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">remdom</span>.<span class="ruby-identifier">to</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">cdom</span>.<span class="ruby-identifier">from</span>))
+                       <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">insert</span>(<span class="ruby-identifier">pos</span>, <span class="ruby-identifier">remdom</span>)
+                       <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">remdom</span>)
+               <span class="ruby-keyword kw">end</span>
+                <span class="ruby-keyword kw">end</span>
+                                <span class="ruby-identifier">pdom</span> = <span class="ruby-identifier">cdom</span>
+                        <span class="ruby-keyword kw">end</span>
+                        <span class="ruby-comment cmt"># TODO</span>
+                        <span class="ruby-comment cmt"># this should be tried more than once</span>
+                        <span class="ruby-comment cmt"># attempt to drop a removed domain into the last position</span>
+                <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">remdom</span><span class="ruby-operator">|</span>
+                        <span class="ruby-keyword kw">next</span> <span class="ruby-keyword kw">unless</span> ((<span class="ruby-identifier">remdom</span>.<span class="ruby-identifier">from</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">pdom</span>.<span class="ruby-identifier">to</span>) <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">remdom</span>.<span class="ruby-identifier">to</span> <span class="ruby-operator">&lt;</span> <span class="ruby-ivar">@length</span>))
+               <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">remdom</span>)
+              <span class="ruby-identifier">deleted</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">remdom</span>)
+                        <span class="ruby-keyword kw">end</span>
+                        <span class="ruby-ivar">@deleted</span> = <span class="ruby-identifier">deleted</span>
+                <span class="ruby-keyword kw">end</span>
+                <span class="ruby-keyword kw">return</span> <span class="ruby-keyword kw">self</span>
+  <span class="ruby-keyword kw">end</span></pre>
+</body>
+</html>

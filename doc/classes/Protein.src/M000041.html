@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+  <title>get_interdom_seq (Protein)</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
+</head>
+<body class="standalone-code">
+  <pre><span class="ruby-comment cmt"># File xdomsuite.rb, line 948</span>
+  <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">get_interdom_seq</span> (<span class="ruby-identifier">min</span>=<span class="ruby-value">20</span>, <span class="ruby-identifier">fasta</span>=<span class="ruby-keyword kw">false</span>)
+    <span class="ruby-keyword kw">return</span> <span class="ruby-keyword kw">false</span> <span class="ruby-keyword kw">if</span> (<span class="ruby-ivar">@sequence</span>.<span class="ruby-identifier">empty?</span>)
+    <span class="ruby-identifier">interdom_seqs</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+    <span class="ruby-identifier">fastaseq</span> = <span class="ruby-constant">String</span>.<span class="ruby-identifier">new</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">fasta</span>
+    <span class="ruby-identifier">interdoms</span> = <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">get_interdoms</span>(<span class="ruby-identifier">min</span>.<span class="ruby-identifier">to_i</span>)
+    <span class="ruby-identifier">interdom_no</span> = <span class="ruby-value">0</span>
+    <span class="ruby-identifier">interdoms</span>.<span class="ruby-identifier">keys</span>.<span class="ruby-identifier">sort</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">start</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">interdom_no</span> <span class="ruby-operator">+=</span> <span class="ruby-value">1</span>
+      <span class="ruby-identifier">stop</span> = <span class="ruby-identifier">interdoms</span>[<span class="ruby-identifier">start</span>]
+      <span class="ruby-identifier">seq</span> = <span class="ruby-ivar">@sequence</span>[(<span class="ruby-identifier">start</span><span class="ruby-operator">-</span><span class="ruby-value">1</span>)<span class="ruby-operator">..</span>(<span class="ruby-identifier">stop</span><span class="ruby-operator">-</span><span class="ruby-value">1</span>)]
+      <span class="ruby-identifier">interdom_seqs</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">seq</span>)
+      <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">fasta</span>
+        <span class="ruby-identifier">fastaseq</span> <span class="ruby-operator">+=</span> <span class="ruby-node">&quot;&gt;#{interdom_no}.#{self.pid}\t#{start}-#{stop}\n&quot;</span>
+        <span class="ruby-identifier">fastaseq</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">seq</span><span class="ruby-operator">+</span><span class="ruby-value str">&quot;\n&quot;</span>
+      <span class="ruby-keyword kw">end</span>
+    <span class="ruby-keyword kw">end</span>
+    <span class="ruby-keyword kw">return</span> (<span class="ruby-identifier">fasta</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">fastaseq</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">interdom_seqs</span>
+  <span class="ruby-keyword kw">end</span></pre>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+  <title>new (Protein)</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
+</head>
+<body class="standalone-code">
+  <pre><span class="ruby-comment cmt"># File xdomsuite.rb, line 558</span>
+  <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span> (<span class="ruby-identifier">pid</span>, <span class="ruby-identifier">length</span> = <span class="ruby-value">0</span>, <span class="ruby-identifier">sequence</span>=<span class="ruby-constant">String</span>.<span class="ruby-identifier">new</span>, <span class="ruby-identifier">species</span>=<span class="ruby-constant">String</span>.<span class="ruby-identifier">new</span>, <span class="ruby-identifier">comment</span>=<span class="ruby-constant">String</span>.<span class="ruby-identifier">new</span>, <span class="ruby-identifier">xdom</span>=<span class="ruby-constant">String</span>.<span class="ruby-identifier">new</span>)
+    <span class="ruby-ivar">@pid</span>       = <span class="ruby-identifier">pid</span>
+    <span class="ruby-ivar">@length</span>   = <span class="ruby-identifier">length</span>
+        <span class="ruby-ivar">@sequence</span> = <span class="ruby-identifier">sequence</span>
+    <span class="ruby-ivar">@species</span>  = <span class="ruby-identifier">species</span>
+    <span class="ruby-ivar">@comment</span>  = <span class="ruby-identifier">comment</span>
+    <span class="ruby-ivar">@domains</span>  = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+    <span class="ruby-ivar">@arr_str</span>  = <span class="ruby-constant">String</span>.<span class="ruby-identifier">new</span>
+    <span class="ruby-ivar">@current_dom</span> = <span class="ruby-value">0</span>
+    <span class="ruby-ivar">@position</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+                <span class="ruby-ivar">@deleted</span> = <span class="ruby-keyword kw">nil</span>
+                <span class="ruby-ivar">@collapsed</span> = <span class="ruby-keyword kw">false</span>
+    <span class="ruby-ivar">@sep</span> = <span class="ruby-value str">';'</span>
+    <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">set_downstream</span>(<span class="ruby-keyword kw">false</span>)
+    <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">set_upstream</span>(<span class="ruby-keyword kw">false</span>)
+    <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">set_location</span>(<span class="ruby-keyword kw">nil</span>, <span class="ruby-keyword kw">nil</span>, <span class="ruby-keyword kw">nil</span>, <span class="ruby-keyword kw">nil</span>)
+  <span class="ruby-keyword kw">end</span></pre>
+</body>
+</html>

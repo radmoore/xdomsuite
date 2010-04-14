@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+  <title>collapse (Protein)</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
+</head>
+<body class="standalone-code">
+  <pre><span class="ruby-comment cmt"># File xdomsuite.rb, line 826</span>
+  <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">collapse</span> (<span class="ruby-identifier">repunit</span>=<span class="ruby-value">2</span>)
+    <span class="ruby-identifier">repno</span> = <span class="ruby-value">1</span>
+    <span class="ruby-identifier">prev_dom</span> = <span class="ruby-value">-1</span>
+    <span class="ruby-identifier">rep_doms</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+    <span class="ruby-identifier">doms</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+    <span class="ruby-identifier">p</span> = <span class="ruby-constant">Protein</span>.<span class="ruby-identifier">new</span>(<span class="ruby-ivar">@pid</span>, <span class="ruby-ivar">@sequence</span>, <span class="ruby-ivar">@species</span>, <span class="ruby-ivar">@comment</span>)
+    <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">d</span><span class="ruby-operator">|</span>
+      <span class="ruby-keyword kw">unless</span> (<span class="ruby-identifier">prev_dom</span> <span class="ruby-operator">==</span> <span class="ruby-value">-1</span>)
+        <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">prev_dom</span>.<span class="ruby-identifier">did</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">d</span>.<span class="ruby-identifier">did</span>)
+          <span class="ruby-identifier">repno</span> <span class="ruby-operator">+=</span> <span class="ruby-value">1</span>
+          <span class="ruby-identifier">rep_doms</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">prev_dom</span>)
+        <span class="ruby-keyword kw">else</span>
+          <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">repno</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-identifier">repunit</span>)
+                                                <span class="ruby-ivar">@collapsed</span> = <span class="ruby-keyword kw">true</span>
+            <span class="ruby-identifier">c_dom</span> = <span class="ruby-constant">Domain</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">rep_doms</span>[<span class="ruby-value">0</span>].<span class="ruby-identifier">from</span>, <span class="ruby-identifier">prev_dom</span>.<span class="ruby-identifier">to</span>, <span class="ruby-identifier">prev_dom</span>.<span class="ruby-identifier">did</span>, <span class="ruby-value">-1</span>, <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">pid</span>, <span class="ruby-node">&quot; #{repno} collapsed repeats&quot;</span>)
+            <span class="ruby-identifier">p</span>.<span class="ruby-identifier">add_domain</span>(<span class="ruby-identifier">c_dom</span>)
+            <span class="ruby-identifier">doms</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">c_dom</span>)
+            <span class="ruby-identifier">rep_doms</span>.<span class="ruby-identifier">clear</span>
+          <span class="ruby-keyword kw">elsif</span> (<span class="ruby-identifier">repno</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">1</span>)
+            <span class="ruby-identifier">doms</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">rep_doms</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">prev_dom</span>)
+            <span class="ruby-identifier">rep_doms</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">prev_dom</span>).<span class="ruby-identifier">each</span> {<span class="ruby-operator">|</span><span class="ruby-identifier">dom</span><span class="ruby-operator">|</span> <span class="ruby-identifier">p</span>.<span class="ruby-identifier">add_domain</span>(<span class="ruby-identifier">dom</span>)}
+            <span class="ruby-identifier">rep_doms</span>.<span class="ruby-identifier">clear</span>
+          <span class="ruby-keyword kw">else</span>
+            <span class="ruby-identifier">p</span>.<span class="ruby-identifier">add_domain</span>(<span class="ruby-identifier">prev_dom</span>)
+            <span class="ruby-identifier">doms</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">prev_dom</span>)
+          <span class="ruby-keyword kw">end</span>
+          <span class="ruby-identifier">repno</span> = <span class="ruby-value">1</span>
+        <span class="ruby-keyword kw">end</span>
+      <span class="ruby-keyword kw">end</span>
+      <span class="ruby-identifier">prev_dom</span> = <span class="ruby-identifier">d</span>
+    <span class="ruby-keyword kw">end</span>
+    <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">repno</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-identifier">repunit</span>)
+                        <span class="ruby-ivar">@collapsed</span> = <span class="ruby-keyword kw">true</span>
+      <span class="ruby-identifier">c_dom</span> = <span class="ruby-constant">Domain</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">rep_doms</span>[<span class="ruby-value">0</span>].<span class="ruby-identifier">from</span>, <span class="ruby-identifier">prev_dom</span>.<span class="ruby-identifier">to</span>, <span class="ruby-identifier">prev_dom</span>.<span class="ruby-identifier">did</span>, <span class="ruby-value">-1</span>, <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">pid</span>, <span class="ruby-node">&quot;#{repno} collapsed repeats&quot;</span>)
+      <span class="ruby-identifier">p</span>.<span class="ruby-identifier">add_domain</span>(<span class="ruby-identifier">c_dom</span>)
+      <span class="ruby-identifier">doms</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">c_dom</span>)
+    <span class="ruby-keyword kw">elsif</span> (<span class="ruby-identifier">repno</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">1</span>)
+      <span class="ruby-identifier">doms</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">rep_doms</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">prev_dom</span>)
+      <span class="ruby-identifier">rep_doms</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">prev_dom</span>).<span class="ruby-identifier">each</span> {<span class="ruby-operator">|</span><span class="ruby-identifier">dom</span><span class="ruby-operator">|</span> <span class="ruby-identifier">p</span>.<span class="ruby-identifier">add_domain</span>(<span class="ruby-identifier">dom</span>)}
+    <span class="ruby-keyword kw">else</span>
+      <span class="ruby-identifier">doms</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">prev_dom</span>)
+      <span class="ruby-identifier">p</span>.<span class="ruby-identifier">add_domain</span>(<span class="ruby-identifier">prev_dom</span>)
+    <span class="ruby-keyword kw">end</span>
+<span class="ruby-comment cmt">#    return doms</span>
+    <span class="ruby-identifier">p</span>.<span class="ruby-identifier">update_arrstr</span>()
+    <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">p</span>
+  <span class="ruby-keyword kw">end</span></pre>
+</body>
+</html>

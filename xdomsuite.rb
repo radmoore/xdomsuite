@@ -126,15 +126,40 @@ class Parser
        pre_as) = line.split  # predicted_active_site_residues
 
       next if (eva_ht.to_f >= evalue)
-      name = (name) ? hmm_na : hmm_ac
+      did = (name) ? hmm_na : hmm_ac
+      did = did.split('.')[0] if (/.+\.\d+/.match(did))
       @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
       p = @proteins[seq_id]
-      d = Domain.new(env_st.to_i, env_en.to_i, name, eva_ht.to_f, p.pid)
+      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, p.pid)
       p.add_domain(d)
-
     end
     hmmout.close
     return @proteins.values
+  end
+
+
+
+  # TODO: complete
+  def hmmscan(evalue=10, name=true, custom=true)
+      
+      hmmout = File.open(@filename, "r")
+      p = d = nil
+      length = 0
+      
+      next if (/^#{@comment}/.match(line) || /^$/.match(line))
+
+      while(line = hmmout.gets)
+        line.chomp!
+        fields = line.split
+        length = fields.shift if (/\d+/.match(fields[0]))
+        next if (fields[12].to_f >= evalue)
+        name = (name) ? fields[6] : fields[5]
+        @proteins[fields[0]] = Protein.new(fields[0], length) unless (@proteins.has_key?(fields[0]))
+        p = @proteins[fields[0]]
+      end
+
+      hmmout.close
+        
   end
 
   private

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+  <title>to_s (Protein)</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
+</head>
+<body class="standalone-code">
+  <pre><span class="ruby-comment cmt"># File xdomsuite.rb, line 796</span>
+  <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">to_s</span>
+    <span class="ruby-identifier">head</span> = (<span class="ruby-ivar">@length</span> <span class="ruby-operator">!=</span> <span class="ruby-value">0</span>) <span class="ruby-operator">?</span> <span class="ruby-value str">&quot;&gt;&quot;</span><span class="ruby-operator">+</span><span class="ruby-ivar">@pid</span><span class="ruby-operator">+</span><span class="ruby-value str">&quot;\t&quot;</span><span class="ruby-operator">+</span><span class="ruby-ivar">@length</span>.<span class="ruby-identifier">to_s</span><span class="ruby-operator">+</span><span class="ruby-value str">&quot;\n&quot;</span> <span class="ruby-operator">:</span> <span class="ruby-value str">&quot;&gt;&quot;</span><span class="ruby-operator">+</span><span class="ruby-ivar">@pid</span><span class="ruby-operator">+</span><span class="ruby-value str">&quot;\t&quot;</span><span class="ruby-operator">+</span><span class="ruby-value str">&quot;\t&quot;</span><span class="ruby-operator">+</span><span class="ruby-value str">&quot;\n&quot;</span>
+    <span class="ruby-identifier">doms</span> = <span class="ruby-constant">String</span>.<span class="ruby-identifier">new</span>
+                <span class="ruby-comment cmt"># NOTE: if protein was created from hmmout, it is possible that the domains</span>
+                <span class="ruby-comment cmt"># (in partcular for e10) and not _quite_ properly sorted. This methods sorts</span>
+                <span class="ruby-comment cmt"># in place, and will repeat the sort everytime its called</span>
+                <span class="ruby-comment cmt"># (***UNEFFCIENT***), to ensure that xdoms are *always* properly sorted</span>
+                <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">sort!</span> {<span class="ruby-operator">|</span><span class="ruby-identifier">x</span>, <span class="ruby-identifier">y</span><span class="ruby-operator">|</span> <span class="ruby-identifier">x</span>.<span class="ruby-identifier">from</span> <span class="ruby-operator">&lt;=&gt;</span> <span class="ruby-identifier">y</span>.<span class="ruby-identifier">from</span>}
+    <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">domains</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">d</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">doms</span> <span class="ruby-operator">+=</span> <span class="ruby-node">&quot;#{d.from.to_s}\t#{d.to.to_s}\t#{d.did}\t#{d.evalue.to_s}&quot;</span>
+      <span class="ruby-identifier">doms</span> <span class="ruby-operator">+=</span> (<span class="ruby-identifier">d</span>.<span class="ruby-identifier">comment</span>.<span class="ruby-identifier">empty?</span>) <span class="ruby-operator">?</span> <span class="ruby-value str">&quot;\n&quot;</span> <span class="ruby-operator">:</span> <span class="ruby-node">&quot;\t;#{d.comment}\n&quot;</span>
+    <span class="ruby-keyword kw">end</span>
+    <span class="ruby-identifier">head</span><span class="ruby-operator">+</span><span class="ruby-identifier">doms</span>
+  <span class="ruby-keyword kw">end</span></pre>
+</body>
+</html>
