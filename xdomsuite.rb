@@ -452,7 +452,9 @@ class XDOM
   # 
   def find_prot_by_arr(arrstr, sep=';')
     arrstr.gsub("#{sep}", ';') if (sep != ';')
-    return (@arrangements.member?(arrstr)) ? @arrangements[arrstr] : nil
+    pids = (@arrangements.member?(arrstr)) ? @arrangements[arrstr] : nil
+    return pids if pids.nil?
+    return pids.collect{|pid| @proteins[pid]}
   end
 
   # Returns an array of proteins that contain at least one domain with the ID _did, or _nil_ if none are found
