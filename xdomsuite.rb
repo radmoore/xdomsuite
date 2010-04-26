@@ -525,26 +525,6 @@ private
     file.split('.')[0]
   end
 
-  def read_gff (gffile)
-    f = File.open(gffile, "r")
-    gff = Hash.new
-    gff['+'] = Array.new
-    gff['-'] = Array.new
-    while(line = f.gets)
-      next if (/^##.+/.match(line))
-      line.chomp!
-      fields = line.split
-      next unless (fields[2] == 'protein')
-      pid = fields[8].split(';')[0].split('=')[1]
-      next unless (self.has_prot?(pid))
-      strand  = fields[6]
-      next if (strand == '.')
-      gff[strand].push(line)
-    end
-    f.close
-    return gff
-  end
-
   def read_xdom (xdomfile)
     f = File.open(xdomfile, "r")
     protein = 0
@@ -661,51 +641,11 @@ class Protein
 		return @collapsed
 	end
 
-  def set_location (chromosome, strand, from, to)
-    @position['location'] = Hash.new unless (@position.has_key?('location'))
-    @position['location']['chomosome'] = chromosome
-    @position['location']['strand'] = strand
-    @position['location']['from'] = from
-    @position['location']['to'] = to
-    return
-  end
-
-  def set_upstream (pid)
-    @position['upstream'] = pid
-    return
-  end
-
-  def set_downstream (pid)
-    @position['downstream'] = pid
-    return
-  end
-
-  def location
-    return @position['location']
-  end
-
-  def get_chromosome
-    return @position['location']['chomosome']
-  end
-
-  def get_strand
-    return @position['location']['strand']
-  end
-
-  def upstream_arr
-
-  end
-
-  def downstream_arr
-
-  end
-
 	# TODO: return true if overlaps exist
   def overlaps?
     olap = 0
     cdom
     self.domains.each do |d|
-      
 
     end
   end
@@ -1075,44 +1015,3 @@ class Domain
 
 
 end
-
-# CLASS: INDICATOR
-class Indicator
-
-  def initialize(indtype = "dots")
-    @stop_indicator = false
-    @indtype = indtype
-  end
-
-  def start
-    if (@indtype == "lines")
-      loop {
-        STDERR.print("\r|")
-        STDERR.print("\r/")
-        STDERR.print("\r-")
-        STDERR.print("\r\\")
-        STDERR.print("\r|")
-        STDERR.print("\r/")
-        STDERR.print("\r-")
-        STDERR.print("\r\\")
-        break if @stop_indicator
-      }
-      elsif (@indtype == "dots")
-        loop {
-          STDERR.puts(".")
-          break if @stop_indicator
-        }
-     end
-  end
-
-  def stop
-    @stop_indicator = true
-    STDERR.puts
-  end
-
-
-
-
-end
-
-
