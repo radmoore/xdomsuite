@@ -130,7 +130,7 @@ class Parser
       did = did.split('.')[0] if (/.+\.\d+/.match(did))
       @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
       p = @proteins[seq_id]
-      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, p.pid)
+      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, p.pid, cla_id)
       p.add_domain(d)
     end
     hmmout.close
@@ -199,6 +199,10 @@ class XDOM
   FASTAHEAD = /^>(\S+)\s+.+/
   include Enumerable
 
+
+  @@clans = false
+  @@names = true
+
   # Returns a new xdom object containing proteins and domains
   #
   # * +filename+ : path to the xdomfile
@@ -222,6 +226,48 @@ class XDOM
   end
 
   attr_reader :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains
+
+  def self.clans
+    @@clans
+  end
+
+  # TODO clean this up
+  def self.clans=(var)
+    unless (var.kind_of?(TrueClass) or var.kind_of?(FalseClass))
+      raise "Class variable 'clans' must of type boolean"
+    end
+    if var
+      begin
+        require 'pfam_translator'
+      rescue LoadError
+        STDERR.puts "ERROR: pfam_translator.rb required to map to clans, setting clans to false"
+        var = false
+      end
+    end
+    @@clans = var
+  end
+
+  def self.names
+    @@names
+  end
+
+  # method to set class varable names, that indicates
+  # whether the xdom file read to create a new xdom
+  # object uses names or ids. This is relevant for acc || id to
+  # clan mapping
+  def self.names=(var)
+    unless (var.kind_of?(TrueClass) or var.kind_of?(FalseClass))
+      raise "Class variable 'names' must of type boolean"
+    end
+    @@names = var
+  end
+
+  # returns a random protein object
+  # or nil
+  def grab
+    return nil if @proteins.keys.empty?
+    return @proteins[@proteins.keys[rand(@proteins.size)]]
+  end
 
   # Returns string representation of self
   def to_s
@@ -542,7 +588,15 @@ private
           next
         end
         (from, to, did, evalue) = line.split
-        domain = Domain.new(from.to_i, to.to_i, did, evalue.to_f, protein.pid)
+        clan = nil
+        if @@clans
+          if (PfamTranslator::ACC2CLAN.has_key?(did))
+            clan = PfamTranslator::ACC2CLAN[did]
+          elsif (PfamTranslator::NAME2CLAN.has_key?(did))
+            clan = PfamTranslator::NAME2CLAN[did]
+          end
+        end
+        domain = Domain.new(from.to_i, to.to_i, did, evalue.to_f, protein.pid, clan)
         @total_dom_residues += (to.to_i-from.to_i)
         @domains[did] = Array.new unless (@domains.member?(did))
         @total_domains += 1 if (@domains[did].push(protein.pid))
@@ -575,9 +629,6 @@ class Protein
 		@deleted = nil
 		@collapsed = false
     @sep = ';'
-    self.set_downstream(false)
-    self.set_upstream(false)
-    self.set_location(nil, nil, nil, nil)
   end
   attr_accessor :pid, :length, :sequence, :species, :comment, :arr_str, :sep
 	attr_reader :deleted
@@ -804,7 +855,7 @@ class Protein
         else
           if (repno >= repunit)
 						@collapsed = true
-            c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, " #{repno} collapsed repeats")
+            c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, prev_dom.cid, " #{repno} collapsed repeats")
             p.add_domain(c_dom)
             doms.push(c_dom)
             rep_doms.clear
@@ -823,7 +874,7 @@ class Protein
     end
     if (repno >= repunit)
 			@collapsed = true
-      c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, "#{repno} collapsed repeats")
+      c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, prev_dom.cid, "#{repno} collapsed repeats")
       p.add_domain(c_dom)
       doms.push(c_dom)
     elsif (repno > 1)
@@ -976,12 +1027,13 @@ class Domain
   CTYPE = /^COILS.+/
   DTYPE = /^DIS.+/
 
-  def initialize (from, to, did, evalue, pid, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
+  def initialize (from, to, did, evalue, pid, clanid, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
     @from = from
     @to = to
     @did = did
     @acc = acc
     @go = go
+    @cid = clanid
     @evalue = evalue
     @sequence = sequence
     #@protein = protein
@@ -990,7 +1042,7 @@ class Domain
     @comment = comment
     @length = @to - @from
   end
-  attr_accessor :from, :to, :did, :acc, :go, :evalue, :sequence, :type, :pid, :comment, :length
+  attr_accessor :from, :to, :did, :acc, :go, :cid, :evalue, :sequence, :type, :pid, :comment, :length
 
   def fasta_seq
     return (sequence.empty?) ?
