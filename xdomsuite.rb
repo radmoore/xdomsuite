@@ -629,9 +629,11 @@ class Protein
 		@deleted = nil
 		@collapsed = false
     @sep = ';'
+    @clans = false
+    @pfamb = false
   end
-  attr_accessor :pid, :length, :sequence, :species, :comment, :arr_str, :sep
-	attr_reader :deleted
+  attr_accessor :length, :sequence, :species, :comment, :sep, :clans, :pfamb
+	attr_reader :deleted, :pid, :arr_str
 
   def add_domain (domain)
     @domains.push(domain)
@@ -820,14 +822,23 @@ class Protein
 		# (***UNEFFCIENT***), to ensure that xdoms are *always* properly sorted
 		self.domains.sort! {|x, y| x.from <=> y.from}
     self.domains.each do |d|
-      doms += "#{d.from.to_s}\t#{d.to.to_s}\t#{d.did}\t#{d.evalue.to_s}"
+      did = d.did
+      if @clans
+        did = (d.cid.nil?) ? d.did : d.cid
+      end
+      doms += "#{d.from.to_s}\t#{d.to.to_s}\t#{did}\t#{d.evalue.to_s}"
       doms += (d.comment.empty?) ? "\n" : "\t;#{d.comment}\n"
     end
     head+doms
   end
 
   def to_arr_s(sep = ';')
-    (self.domains.collect { |d| d.did }).join(sep)
+    ( self.domains.collect { |d|
+        did = d.did
+        did = d.cid if (clans && (not d.cid.nil?))
+        did
+      }
+    ).join(sep)
   end
 
   def next_dom
@@ -1027,7 +1038,7 @@ class Domain
   CTYPE = /^COILS.+/
   DTYPE = /^DIS.+/
 
-  def initialize (from, to, did, evalue, pid, clanid, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
+  def initialize (from, to, did, evalue, pid, clanid=nil, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
     @from = from
     @to = to
     @did = did
@@ -1050,8 +1061,12 @@ class Domain
       ">#{self.pid}.#{self.did}\t#{self.from}-#{self.to}\n#{self.sequence}"
   end
 
-  def to_s
-    self.from.to_s+"\t"+self.to.to_s+"\t"+self.did+"\t"+self.evalue.to_s
+  def to_s(clans = false)
+    did = self.did
+    if clans
+      did = (self.cid.nil?) ? did : cid
+    end
+    self.from.to_s+"\t"+self.to.to_s+"\t"+did+"\t"+self.evalue.to_s
   end
 
   private
