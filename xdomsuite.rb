@@ -397,6 +397,8 @@ class XDOM
   # In place version of filter_by_type 
 	def filter_by_type!(type)
 		@proteins.values.each {|p| p.type_filter!(type)}		
+    STDERR.puts "updating arrangements"
+    update_arrangements()
     return
 	end
 
@@ -689,14 +691,14 @@ class Protein
 	end
 
   # In place variant of self.type_filter
-	def type_filter! (type)
+	def type_filter!(type)
 		doms_filtered = Array.new
 		@domains.each {|d| doms_filtered << d if (d.type == type) }
 		@domains = doms_filtered
 		return self
 	end
 
-  def member? (did)
+  def member?(did)
     @domains.each {|d| return true if (d.did == did)}
     return false
   end
