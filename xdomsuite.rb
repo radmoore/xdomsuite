@@ -381,17 +381,23 @@ class XDOM
     return dist
   end
 
-  # Returns an array of all proteins in _self_ after removing all domains that are not of _type_
+  # TODO: this does not work - seems to modify self!!!
+  # Returns a new xdom where all domain that are not of type _type_ are removed
   # See Protein.type_filter
 	def filter_by_type(type)
-		prot_filt = Array.new
-		@proteins.values.each {|p| prot_filt << p.type_filter(type)}		
-		return prot_filt
+    newxdom = self.dup
+    while(newxdom.has_next?)
+      p = newxdom.next_prot
+      p.type_filter!(type)
+    end
+    newxdom.rewind
+    return newxdom
 	end
 
   # In place version of filter_by_type 
 	def filter_by_type!(type)
 		@proteins.values.each {|p| p.type_filter!(type)}		
+    return
 	end
 
   # Returns a Hash with the frequency counts for all known _types_ of domains
@@ -548,6 +554,11 @@ class XDOM
     protwdoms = (@proteins.values.inject(0) {|sum, p| sum.succ if p.has_domains?})
     cov = ( (100/@total_proteins.to_f) * protwdoms.to_f )
 #    return num ? cov : sprintf('%2f', cov)
+  end
+
+  def resolve_overlaps(mode)
+    @proteins.values.each {|p| p.resolve_overlaps(mode)}
+    return nil
   end
 
   # TODO
