@@ -559,6 +559,7 @@ class XDOM
 
   def resolve_overlaps(mode)
     @proteins.values.each {|p| p.resolve_overlaps(mode)}
+		update_arrangements()
     return nil
   end
 
@@ -809,6 +810,7 @@ class Protein
 			end
 			@deleted = deleted
 		end
+		self.update_arrstr
 		return self
   end
 
