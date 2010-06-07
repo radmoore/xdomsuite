@@ -101,7 +101,7 @@ class Parser
   # * significance
   # * Clan
   # * Predicted_active_site_residues
-  def pfamscan(evalue=10, name=true)
+  def pfamscan(evalue=10, name=true, length=true)
     hmmout = File.open(@filename, "r")
     p = nil
     while(line = hmmout.gets)
@@ -193,15 +193,12 @@ end
 # 
 # * Currently only supports custom pfamscan output 
 # * Check file type validity
-class XDOM
+class Proteome
 
   HEADERre = /^>(\S+)\s+(\d+)$/
-  FASTAHEAD = /^>(\S+)\s+.+/
+  FASTAHEAD = /^>(\S+)\s?.?/
   include Enumerable
 
-
-  @@clans = false
-  @@names = true
 
   # Returns a new xdom object containing proteins and domains
   #
@@ -209,7 +206,10 @@ class XDOM
   # * +evalue+   : annotation threshold
   # * +species+  : name of the proteome (OPTIONAL)
   def initialize(filename, evalue, species = "")
+    @comment = '#'
     @filename = filename
+    @file_ext = File.extname(@filename)
+    @file_bn = File.basename(@filename, @file_ext)
     @species  = (species.empty?) ? get_species(filename) : species
     @evalue   = evalue
     @proteins = Hash.new
@@ -219,47 +219,42 @@ class XDOM
     @residue_coverage = 0.00
     @total_dom_residues = 0
     @total_prot_length = 0
-    read_xdom(filename)
+    @clans = false
+    @names = true
+    if (@file_ext == '.hmmout')
+      read_pfamscan(evalue)
+    elsif (@file_ext == '.xdom')
+      read_xdom(@filename)
+    else
+      raise "Unsupported file type #{@file_ext}"
+    end
     @total_proteins   = @proteins.size
     @uniq_domains   = @domains.keys.size
     @current_prot = 0
   end
 
-  attr_reader :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains
+  attr_reader :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains, :clans, :names
 
-  def self.clans
-    @@clans
-  end
-
-  # TODO clean this up
-  def self.clans=(var)
+  def clans=(var)
+    return if var == @clans
     unless (var.kind_of?(TrueClass) or var.kind_of?(FalseClass))
       raise "Class variable 'clans' must of type boolean"
     end
-    if var
-      begin
-        require 'pfam_translator'
-      rescue LoadError
-        STDERR.puts "ERROR: pfam_translator.rb required to map to clans, setting clans to false"
-        var = false
-      end
-    end
-    @@clans = var
+    @clans = var
+    @proteins.values.each {|p| p.clans = var}
+    update_arrangements()
+    update_domains()
   end
 
-  def self.names
-    @@names
-  end
-
-  # method to set class varable names, that indicates
-  # whether the xdom file read to create a new xdom
-  # object uses names or ids. This is relevant for acc || id to
-  # clan mapping
-  def self.names=(var)
+  def names=(var)
+    return if var == @names
     unless (var.kind_of?(TrueClass) or var.kind_of?(FalseClass))
       raise "Class variable 'names' must of type boolean"
     end
-    @@names = var
+    @names = var
+    @proteins.values.each {|p| p.names = var}
+    update_arrangements()
+    update_domains()
   end
 
   # returns a random protein object
@@ -272,7 +267,11 @@ class XDOM
   # Returns string representation of self
   def to_s
     lines = String.new
-    @proteins.values.each {|p| lines += p.to_s}
+    @proteins.values.each {|p| 
+      p.clans = @clans
+      p.names = @names
+      lines += p.to_s
+    }
     return lines
   end
 
@@ -381,7 +380,7 @@ class XDOM
     return dist
   end
 
-  # TODO: this does not work - seems to modify self!!!
+  # TODO: this does not work - seems to modify self (no deep copy?)!!!
   # Returns a new xdom where all domain that are not of type _type_ are removed
   # See Protein.type_filter
 	def filter_by_type(type)
@@ -414,7 +413,6 @@ class XDOM
 		@proteins.values.each do |p|
 			p.domains.each {|d| types[d.type] = (types.has_key?(d.type)) ? types[d.type].succ : 1 }
 		end
-    puts "type before sorting: "+types.inspect
 		return types.sort{|a, b| b[1] <=> a[1]}.to_h
 	end
 
@@ -530,8 +528,8 @@ class XDOM
     return nil if prots.nil?
     prots.each do |p|
       p = p.collapse if collapse
-      next if uniq.has_key?(p.arr_str)
-      uniq[p.arr_str] = p
+      next if uniq.has_key?(p.arrstr)
+      uniq[p.arrstr] = p
     end
     return uniq.values
   end
@@ -563,6 +561,19 @@ class XDOM
     return nil
   end
 
+  def simple_overlap_resolution
+    @proteins.values.each {|p| p.simple_overlap_resolution}
+		update_arrangements()
+    return nil
+  end
+
+  def resolve_overlaps_with_sets
+    @proteins.values.each {|p| p.resolve_overlaps_with_sets}
+    update_arrangements()
+    return nil
+  end
+
+
   # TODO
   def annotate_with_context(xdom)
 
@@ -570,18 +581,157 @@ class XDOM
 
 private
 
+  # TODO: perhaps this can update domains as well
 	def update_arrangements
 		new_arr = Hash.new
 		@proteins.each do |pid, p|
-			new_arr[p.arr_str] = Array.new unless (new_arr.has_key?(p.arr_str))
-			new_arr[p.arr_str].push(pid)
+			new_arr[p.arrstr] = Array.new unless (new_arr.has_key?(p.arrstr))
+			new_arr[p.arrstr].push(pid)
 		end
 		@arrangements = new_arr
 	end
 
-  def get_species (filename)
+  # TODO: when clan or domains is changed in an instance of
+  # proteome, recreate domain hash - ensure that this cannot be
+  # done in update_arrangements()
+  # this will be painfully slow due to use of includes?
+  # * consider using uniq instead of includes?
+  def update_domains
+    new_doms = Hash.new
+    @proteins.each do |pid, p|
+      p.domains.each do |d|
+        setid = (@names) ? d.did : d.acc
+        setid = (@clans && (not d.cid.nil?)) ? d.cid : setid
+        new_doms[setid] = Array.new unless (new_doms.has_key?(setid))
+        new_doms[setid] << pid unless new_doms[setid].include?(pid)
+      end
+    end
+    @domains = new_doms
+    return nil
+  end
+
+  def get_species(filename)
     file = File.basename(filename, ".xdom")
     file.split('.')[0]
+  end
+
+  # TODO:
+  # * !!!!!sanitize
+  # * check efficiency !!!
+  def read_pfamscan(evalue=10, envelope=false)
+    hmmout = File.open(@filename, "r")
+    cpid = pid = nil
+    entries = Array.new
+    while(line = hmmout.gets)
+      next if (/^#{@comment}/.match(line) || /^$/.match(line))
+      line.chomp!
+      cpid = line.split[1]
+      eva_ht = line.split[13]
+      next if (eva_ht.to_f > evalue.to_f)
+      if (pid.nil?)
+        entries << line
+        pid = cpid
+        next
+      end
+      if (cpid != pid)
+        if entries.empty?
+          entries = Array.new
+          entries << line
+          pid = cpid
+          next
+        end
+        p = nil
+        entries.each do |domline|
+          (seq_le, # sequence length, custom field
+           seq_id, # seq  id
+           aln_st, # alignment start
+           aln_en, # alignment end
+           env_st, # envelope start
+           env_en, # envelope end
+           hmm_ac, # hmm acc
+           hmm_na, # hmm name
+           dom_ty, # type
+           hmm_st, # hmm start
+           hmm_en, # hmm end
+           hmm_ln, # hmm length
+           bit_sc, # bit score
+           eva_ht, # e-value
+           sig_ht, # significance
+           cla_id, # clan
+           pre_as) = domline.split  # predicted_active_site_residues
+          hmm_ac = hmm_ac.split('.')[0] if (/.+\.\d+/.match(hmm_ac))
+          cla_id = nil if (cla_id == 'NA' || cla_id == 'No_clan')
+          if p.nil?
+            p = Protein.new(seq_id, seq_le.to_i, "", @species, "", @filename)
+            p.clans = @clans
+            p.names = @names
+          end
+          from = (envelope) ? env_st.to_i : aln_st.to_i
+          to = (envelope) ? env_en.to_i : aln_en.to_i         
+          d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, "", hmm_ac)
+          p.add_domain(d)
+          @total_dom_residues += (to - from)
+          did = (@names) ? hmm_na : hmm_ac
+          @domains[did] = Array.new unless (@domains.member?(did))
+          @total_domains += 1 if (@domains[did] << p.pid)
+        end
+        @arrangements[p.arrstr] = Array.new unless (@arrangements.has_key?(p.arrstr))
+        @arrangements[p.arrstr] << p.pid
+        @total_prot_length += p.length
+        @proteins[p.pid] = p
+        entries = Array.new
+        entries << line
+        pid = cpid
+        next
+      end
+      entries << line
+      pid = cpid
+    end
+    p = nil
+    entries.each do |domline|
+      (seq_le, # sequence length, custom field
+       seq_id, # seq  id
+       aln_st, # alignment start
+       aln_en, # alignment end
+       env_st, # envelope start
+       env_en, # envelope end
+       hmm_ac, # hmm acc
+       hmm_na, # hmm name
+       dom_ty, # type
+       hmm_st, # hmm start
+       hmm_en, # hmm end
+       hmm_ln, # hmm length
+       bit_sc, # bit score
+       eva_ht, # e-value
+       sig_ht, # significance
+       cla_id, # clan
+       pre_as) = domline.split  # predicted_active_site_residues
+      hmm_ac = hmm_ac.split('.')[0] if (/.+\.\d+/.match(hmm_ac))
+      cla_id = nil if (cla_id == 'NA' || cla_id == 'No_clan')
+      if p.nil?
+        p = Protein.new(seq_id, seq_le.to_i, "", @species, "", @filename)
+        p.clans = @clans
+        p.names = @names
+      end
+
+      p = Protein.new(seq_id, seq_le.to_i, "", @species, "", @filename) if p.nil?
+      from = (envelope) ? env_st.to_i : aln_st.to_i
+      to = (envelope) ? env_en.to_i : aln_en.to_i         
+      d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, "", hmm_ac)
+      p.add_domain(d)
+      @total_dom_residues += (to - from)
+      did = (@names) ? hmm_na : hmm_ac
+      @domains[did] = Array.new unless (@domains.member?(did))
+      @total_domains += 1 if (@domains[did] << p.pid)
+    end
+
+    @arrangements[p.arrstr] = Array.new unless (@arrangements.has_key?(p.arrstr))
+    @arrangements[p.arrstr] << p.pid
+    @total_prot_length += p.length
+    @proteins[p.pid] = p
+
+    hmmout.close
+
   end
 
   def read_xdom (xdomfile)
@@ -592,8 +742,8 @@ private
         next if (/^$/.match(line) || /^#/.match(line))
         if (m = HEADERre.match(line)) then
           unless (protein == 0)
-            @arrangements[protein.arr_str] = Array.new unless (@arrangements.has_key?(protein.arr_str))
-            @arrangements[protein.arr_str].push(protein.pid)
+            @arrangements[protein.arrstr] = Array.new unless (@arrangements.has_key?(protein.arrstr))
+            @arrangements[protein.arrstr].push(protein.pid)
           end
           protein = Protein.new(m[1], m[2].to_i, "", @species, "", @filename)
           @total_prot_length += m[2].to_i
@@ -602,21 +752,14 @@ private
         end
         (from, to, did, evalue) = line.split
         clan = nil
-        if @@clans
-          if (PfamTranslator::ACC2CLAN.has_key?(did))
-            clan = PfamTranslator::ACC2CLAN[did]
-          elsif (PfamTranslator::NAME2CLAN.has_key?(did))
-            clan = PfamTranslator::NAME2CLAN[did]
-          end
-        end
         domain = Domain.new(from.to_i, to.to_i, did, evalue.to_f, protein.pid, clan)
         @total_dom_residues += (to.to_i-from.to_i)
         @domains[did] = Array.new unless (@domains.member?(did))
         @total_domains += 1 if (@domains[did].push(protein.pid))
         protein.add_domain(domain)
       end
-      @arrangements[protein.arr_str] = Array.new unless (@arrangements.has_key?(protein.arr_str))
-      @arrangements[protein.arr_str].push(protein.pid)
+      @arrangements[protein.arrstr] = Array.new unless (@arrangements.has_key?(protein.arrstr))
+      @arrangements[protein.arrstr].push(protein.pid)
     f.close
   end
 
@@ -629,32 +772,58 @@ class Protein
 
   FASTAHEAD = /^>(\S+)\s+.+/
 
-  def initialize (pid, length = 0, sequence=String.new, species=String.new, comment=String.new, xdom=String.new)
-    @pid       = pid
+  def initialize (pid, length = 0, sequence=String.new, species=String.new, comment=String.new, srcfile=String.new)
+    @pid      = pid
     @length   = length
   	@sequence = sequence
     @species  = species
     @comment  = comment
+    @srcfile  = srcfile
     @domains  = Array.new
-    @arr_str  = String.new
+    @arrstr  = String.new
     @current_dom = 0
     @position = Hash.new
 		@deleted = nil
 		@collapsed = false
     @sep = ';'
-    @clans = false
+    @clans = true
+    @names = true
     @pfamb = false
   end
-  attr_accessor :length, :sequence, :species, :comment, :sep, :clans, :pfamb
-	attr_reader :deleted, :pid, :arr_str
+  attr_accessor :length, :sequence, :species, :comment, :sep, :pfamb
+	attr_reader :deleted, :pid, :arrstr, :clans, :names
 
   def add_domain (domain)
     @domains.push(domain)
-    update_arrstr()
+    self.update_arrstr()
+  end
+
+  def clans=(var)
+    return if (var == @clans)
+    unless (var.kind_of?(TrueClass) or var.kind_of?(FalseClass))
+      raise "Class variable 'clans' must of type boolean"
+    end
+    @clans = var
+    self.update_arrstr() if @clans != var
+  end
+
+  def names=(var)
+    return if (var == @names)
+    unless (var.kind_of?(TrueClass) or var.kind_of?(FalseClass))
+      raise "Class variable 'names' must of type boolean"
+    end
+    @names = var
+    self.update_arrstr()
   end
 
   def domains
     return @domains
+  end
+
+  # get a random domain
+  def grab
+    return nil if @domains.empty?
+    return @domains[rand(@domains.size)]
   end
 
   def has_domains?
@@ -687,7 +856,7 @@ class Protein
 	def type_filter(type)
 		p = Protein.new(@pid, @length, @sequence, @species, @comment)
 		@domains.each {|d| p.add_domain(d) if (d.type == type)}
-		p.update_arrstr
+		p.update_arrstr()
 		return p
 	end
 
@@ -696,7 +865,7 @@ class Protein
 		doms_filtered = Array.new
 		@domains.each {|d| doms_filtered << d if (d.type == type) }
 		@domains = doms_filtered
-		self.update_arrstr
+		self.update_arrstr()
 		return self
 	end
 
@@ -709,13 +878,164 @@ class Protein
 		return @collapsed
 	end
 
-	# TODO: return true if overlaps exist
-  def overlaps?
-    olap = 0
-    cdom
-    self.domains.each do |d|
-
+  def has_overlaps?
+    cdom = pdom = nil
+    pos = 0
+    until (pos == self.total_domains)
+      cdom = self.domains[pos]
+      if (pdom.nil?)
+        pdom = cdom
+        pos += 1
+        next
+      end
+      return true if (pdom.to >= cdom.from)
+      pos += 1
     end
+    return false
+  end
+
+  # Create all non-overlapping domain sets and find 
+  # the set that maximized coverage
+  def resolve_overlaps_with_sets
+    return self if self.total_domains < 2 # overlaps impossible
+  #  puts self.pid
+    v = true if (self.pid == 'BGIBMGA005287-PA')
+    non_overlapping = Array.new
+    pos = 0
+    until (pos == self.total_domains) 
+      non_overlapping << [self.domains[pos]]
+      non_overlapping << find_domainsets(self.domains[pos], pos)
+      pos += 1
+    end
+
+   # if (self.pid == 'BGIBMGA005287-PA')
+   #   c = 0
+   #   non_overlapping.each do |pos|
+   #     puts "SET: #{c}"
+   #     non_overlapping[c].each do |d|
+   #       puts "\t"+d.to_s
+   #     end
+   #     puts
+   #     c += 1
+   #   end
+   # end
+   # exit
+
+
+    # determine best set
+    maxpos = coverage = pos = 0
+    until (pos == non_overlapping.size)
+      c = 0
+      domarray = non_overlapping[pos]
+ #     puts domarray.inspect if v
+      domarray.each {|d| c += d.length}
+      if (c > coverage)
+        coverage = c
+        maxpos = pos
+      end
+      pos += 1
+    end
+    if (self.pid == 'BGIBMGA005287-PA')
+      c = 0
+      non_overlapping.each do |pos|
+        puts "SET: #{c}"
+        non_overlapping[c].each do |d|
+          puts "\t"+d.to_s
+        end
+        puts
+        c += 1
+      end
+    end
+    @domains = non_overlapping[maxpos]
+    self.update_arrstr
+    return self
+  end
+
+  # find non-overlapping domain sets
+  def find_domainsets(cdom, pos)
+    v = true if (self.pid == 'BGIBMGA005287-PA')
+    puts "POS: #{pos}, cdom: #{cdom}" if v
+    cpos = 0
+    noover = Array.new
+    noover << cdom
+    until (cpos == self.total_domains)
+      if cpos == pos  
+        cpos += 1
+        next
+      end
+      dom = self.domains[cpos]
+      #if (cdom.overlaps?(dom))
+      if (cpos < pos)
+        if (cdom.to >= dom.from)
+          puts "#{cdom.did} [#{cdom.to}] overlaps with #{dom.did} [#{dom.from}]" if v
+        else
+          noover << dom
+        end
+      else
+        if (cdom.from >= dom.to)
+          puts "#{cdom.did} [#{cdom.to}] overlaps with #{dom.did} [#{dom.from}]" if v
+        else
+          noover << dom
+        end
+      end
+      cpos += 1
+    end
+    return (noover.empty?) ? nil : noover
+  end
+
+#  def overlaps?(domain)
+#    raise "overlap? requires formal paramter of type <DOMAIN>" unless (domain.instance_of?(Domain))
+#    return true if (self.to >= domain.from)
+#    return false
+#  end  
+
+
+  def simple_overlap_resolution
+    pos = 0
+    pdom = cdom = nil
+    deleted = Array.new
+    until (pos == self.total_domains)
+      cdom = self.domains[pos]
+      if (pdom.nil?)
+        pdom = cdom
+        pos += 1
+        next
+      end
+      if (pdom.to > cdom.from)
+        if (pdom.type == cdom.type)
+          if (cdom.evalue <= pdom.evalue)
+            self.domains.delete(pdom)
+            deleted << pdom
+          else
+            self.domains.delete(cdom)
+            deleted << cdom
+          end
+        else 
+          if (pdom.type == 'B')
+            self.domains.delete(pdom)
+            deleted << pdom
+          elsif (cdom.type == 'B')
+            self.domains.delete(cdom)
+            deleted << cdom
+          else
+            if (cdom.evalue <= pdom.evalue)
+              self.domains.delete(pdom)
+              deleted << pdom
+            else
+              self.domains.delete(cdom)
+              deleted << cdom
+            end
+          end
+        end
+        cdom = pdom = nil
+        pos = 0
+        next
+      end
+      pos += 1
+      pdom = cdom
+    end
+    self.update_arrstr
+    return self
   end
 
   # TODO
@@ -838,16 +1158,15 @@ class Protein
 		# (***UNEFFCIENT***), to ensure that xdoms are *always* properly sorted
 		self.domains.sort! {|x, y| x.from <=> y.from}
     self.domains.each do |d|
-      did = d.did
-      if @clans
-        did = (d.cid.nil?) ? d.did : d.cid
-      end
+      did = (@names) ? d.did : d.acc
+      did = (@clans && (not d.cid.nil?)) ? d.cid : did
       doms += "#{d.from.to_s}\t#{d.to.to_s}\t#{did}\t#{d.evalue.to_s}"
       doms += (d.comment.empty?) ? "\n" : "\t;#{d.comment}\n"
     end
     head+doms
   end
 
+  # TODO: check necesity (why not attr_reader?)
   def to_arr_s(sep = ';')
     ( self.domains.collect { |d|
         did = d.did
@@ -868,31 +1187,35 @@ class Protein
     return
   end
 
-  def collapse (repunit=2)
+  def collapse(repunit=2)
+    #v = true if self.pid == 'gi|66523667|ref|XP_625264.1|'
+    return self.dup if self.total_domains < repunit
     repno = 1
-    prev_dom = -1
+    prev_dom = nil
     rep_doms = Array.new
-    doms = Array.new
+   # doms = Array.new
     p = Protein.new(@pid, @sequence, @species, @comment)
     self.domains.each do |d|
-      unless (prev_dom == -1)
+
+      unless (prev_dom.nil?)
         if (prev_dom.did == d.did)
           repno += 1
           rep_doms.push(prev_dom)
         else
           if (repno >= repunit)
 						@collapsed = true
-            c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, prev_dom.cid, " #{repno} collapsed repeats")
+
+            c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, prev_dom.cid, "#{repno} collapsed repeats", prev_dom.acc)
             p.add_domain(c_dom)
-            doms.push(c_dom)
+           # doms.push(c_dom)
             rep_doms.clear
           elsif (repno > 1)
-            doms += rep_doms.push(prev_dom)
+           # doms += rep_doms.push(prev_dom)
             rep_doms.push(prev_dom).each {|dom| p.add_domain(dom)}
             rep_doms.clear
           else
             p.add_domain(prev_dom)
-            doms.push(prev_dom)
+           # doms.push(prev_dom)
           end
           repno = 1
         end
@@ -901,17 +1224,16 @@ class Protein
     end
     if (repno >= repunit)
 			@collapsed = true
-      c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, prev_dom.cid, "#{repno} collapsed repeats")
+      c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, prev_dom.cid, "#{repno} collapsed repeats", prev_dom.acc)
       p.add_domain(c_dom)
-      doms.push(c_dom)
+     # doms.push(c_dom)
     elsif (repno > 1)
-      doms += rep_doms.push(prev_dom)
+      #doms += rep_doms.push(prev_dom)
       rep_doms.push(prev_dom).each {|dom| p.add_domain(dom)}
     else
-      doms.push(prev_dom)
+      #doms.push(prev_dom)
       p.add_domain(prev_dom)
     end
-#    return doms
     p.update_arrstr()
     return p
   end
@@ -919,8 +1241,10 @@ class Protein
   # collapse in place
   def collapse! (repunit=2)
     p = self.collapse(repunit)
-    self.comment += "Repeats collapsed if found"
+    self.comment += "Repeats collapsed if found (REPUNIT #{repunit})"
     @domains = p.domains
+    self.update_arrstr()
+    return
   end
 
   # return procentage if res = false
@@ -935,8 +1259,8 @@ class Protein
 
   # TODO
   def edit_distance (protein, collapse=false)
-    arr1 = self.arr_str.split(';').sort
-    arr2 = protein.arr_str.split(';').sort
+    arr1 = self.arrstr.split(';').sort
+    arr2 = protein.arrstr.split(';').sort
     if (collapse)
       arr1.uniq!
       arr2.uniq!
@@ -953,7 +1277,7 @@ class Protein
     return operations
   end
 
-  def jaccard_dist (protein, collapse=true)
+  def jaccard_dist(protein, collapse=true)
     arrangement1 = self.domains.collect {|d| d.did}
     arrangement2 = protein.domains.collect {|d| d.did}
     intersect = Array.new
@@ -968,7 +1292,7 @@ class Protein
     return round(1-jaccard_coef)
   end
 
-  def get_interdoms (min=20)
+  def get_interdoms(min=20)
     return nil if (self.total_domains == 0)
     interdoms = Hash.new
     prev_pos  = 0
@@ -1012,10 +1336,17 @@ class Protein
   protected
 
   def update_arrstr
-    @arr_str = @domains.collect{|d| d.did}.join(@sep)
+    return if @domains.nil?
+    @arrstr = @domains.collect{|d|
+      setid = (@names) ? d.did : d.acc
+      setid = (@clans && (not d.cid.nil?)) ? d.cid : setid
+      setid
+    }.join(@sep)
   end
 
   private
+
+  #### PUT SET FINDER HERE####
 
   # do not remove duplicates
   def true_intersection (arr1, arr2)
@@ -1047,7 +1378,7 @@ end
 # CLASS: DOMAIN
 class Domain
 
-  ATYPE = /PF.+/
+  ATYPE_ACC = /PF.+/
   BTYPE_ACC = /PB\d+/
 # Pfam-B
   BTYPE_ID = /^Pfam-B_.+/
@@ -1085,12 +1416,20 @@ class Domain
     self.from.to_s+"\t"+self.to.to_s+"\t"+did+"\t"+self.evalue.to_s
   end
 
+  # Compares end position of_self_ to start position of _domain_.
+  # Returns true if positions overlap, false otherwise
+  def overlaps?(domain)
+    raise "overlap? requires formal paramter of type <DOMAIN>" unless (domain.instance_of?(Domain))
+    return true if (self.to >= domain.from)
+    return false
+  end
+
   private
 
   def type_check
-    return 'A' if (ATYPE.match(self.did))
+    return 'A' if (ATYPE_ACC.match(self.acc))
     return 'B' if (BTYPE_ID.match(self.did))
-    return 'B' if (BTYPE_ACC.match(self.did))
+    return 'B' if (BTYPE_ACC.match(self.acc))
     return 'C' if (CTYPE.match(self.did))
     return 'D' if (DTYPE.match(self.did))
     return 'A'
