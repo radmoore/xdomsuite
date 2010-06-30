@@ -315,13 +315,17 @@ class Proteome
   # wrapper around same method in
   # protein
   def pfam_A
-    @proteins.values.collect{|p| p.pfam_A }
+    doms = Array.new
+    doms = @proteins.values.each{|p| doms << p.pfam_A}
+    return doms.flatten
   end
 
   # wrapper around same method in
   # protein
   def pfam_B
-    @proteins.values.collect{|p| p.pfam_B }
+    doms = Array.new
+    @proteins.values.each{|p| doms << p.pfam_B}
+    return doms.flatten
   end
 
 
