@@ -312,6 +312,19 @@ class Proteome
     @domains.keys
   end
 
+  # wrapper around same method in
+  # protein
+  def pfam_A
+    @proteins.values.collect{|p| p.pfam_A }
+  end
+
+  # wrapper around same method in
+  # protein
+  def pfam_B
+    @proteins.values.collect{|p| p.pfam_B }
+  end
+
+
   # Intended for iteration over proteins in self. Returns _true_ if self
   # still has a protein, otherwise _false_
 	def has_next?
@@ -1166,7 +1179,7 @@ class Protein
     head+doms
   end
 
-  # TODO: check necesity (why not attr_reader?)
+  # TODO: check if required (why not attr_reader?)
   def to_arr_s(sep = ';')
     ( self.domains.collect { |d|
         did = d.did
