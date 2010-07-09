@@ -5,14 +5,15 @@
 
 <html>
 <head>
-  <title>update_arrstr (Protein)</title>
+  <title>add_domain (Protein)</title>
   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
   <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
 </head>
 <body class="standalone-code">
-  <pre><span class="ruby-comment cmt"># File xdomsuite.rb, line 969</span>
-  <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">update_arrstr</span>
-    <span class="ruby-ivar">@arr_str</span> = <span class="ruby-ivar">@domains</span>.<span class="ruby-identifier">collect</span>{<span class="ruby-operator">|</span><span class="ruby-identifier">d</span><span class="ruby-operator">|</span> <span class="ruby-identifier">d</span>.<span class="ruby-identifier">did</span>}.<span class="ruby-identifier">join</span>(<span class="ruby-ivar">@sep</span>)
+  <pre><span class="ruby-comment cmt"># File xdomsuite.rb, line 813</span>
+  <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">add_domain</span> (<span class="ruby-identifier">domain</span>)
+    <span class="ruby-ivar">@domains</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">domain</span>)
+    <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">update_arrstr</span>()
   <span class="ruby-keyword kw">end</span></pre>
 </body>
 </html>

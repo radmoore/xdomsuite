@@ -92,9 +92,10 @@ CLASS: DOMAIN
       <h3 class="section-bar">Methods</h3>
 
       <div class="name-list">
-      <a href="#M000044">fasta_seq</a>&nbsp;&nbsp;
-      <a href="#M000043">new</a>&nbsp;&nbsp;
-      <a href="#M000045">to_s</a>&nbsp;&nbsp;
+      <a href="#M000086">fasta_seq</a>&nbsp;&nbsp;
+      <a href="#M000085">new</a>&nbsp;&nbsp;
+      <a href="#M000088">overlaps?</a>&nbsp;&nbsp;
+      <a href="#M000087">to_s</a>&nbsp;&nbsp;
       </div>
     </div>
 
@@ -112,7 +113,7 @@ CLASS: DOMAIN
       <div class="name-list">
         <table summary="Constants">
         <tr class="top-aligned-row context-row">
-          <td class="context-item-name">ATYPE</td>
+          <td class="context-item-name">ATYPE_ACC</td>
           <td>=</td>
           <td class="context-item-value">/PF.+/</td>
         </tr>
@@ -154,6 +155,11 @@ Pfam-B
         <table>
         <tr class="top-aligned-row context-row">
           <td class="context-item-name">acc</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">cid</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc"></td>
         </tr>
@@ -217,13 +223,13 @@ Pfam-B
     <div id="methods">
       <h3 class="section-bar">Public Class methods</h3>
 
-      <div id="method-M000043" class="method-detail">
-        <a name="M000043"></a>
+      <div id="method-M000085" class="method-detail">
+        <a name="M000085"></a>
 
         <div class="method-heading">
-          <a href="Domain.src/M000043.html" target="Code" class="method-signature"
-            onclick="popupCode('Domain.src/M000043.html');return false;">
-          <span class="method-name">new</span><span class="method-args">(from, to, did, evalue, pid, comment=String.new, acc=String.new, go=String.new, sequence=String.new)</span>
+          <a href="Domain.src/M000085.html" target="Code" class="method-signature"
+            onclick="popupCode('Domain.src/M000085.html');return false;">
+          <span class="method-name">new</span><span class="method-args">(from, to, did, evalue, pid, clanid=nil, comment=String.new, acc=String.new, go=String.new, sequence=String.new)</span>
           </a>
         </div>
       
@@ -233,12 +239,12 @@ Pfam-B
 
       <h3 class="section-bar">Public Instance methods</h3>
 
-      <div id="method-M000044" class="method-detail">
-        <a name="M000044"></a>
+      <div id="method-M000086" class="method-detail">
+        <a name="M000086"></a>
 
         <div class="method-heading">
-          <a href="Domain.src/M000044.html" target="Code" class="method-signature"
-            onclick="popupCode('Domain.src/M000044.html');return false;">
+          <a href="Domain.src/M000086.html" target="Code" class="method-signature"
+            onclick="popupCode('Domain.src/M000086.html');return false;">
           <span class="method-name">fasta_seq</span><span class="method-args">()</span>
           </a>
         </div>
@@ -247,13 +253,31 @@ Pfam-B
         </div>
       </div>
 
-      <div id="method-M000045" class="method-detail">
-        <a name="M000045"></a>
+      <div id="method-M000088" class="method-detail">
+        <a name="M000088"></a>
 
         <div class="method-heading">
-          <a href="Domain.src/M000045.html" target="Code" class="method-signature"
-            onclick="popupCode('Domain.src/M000045.html');return false;">
-          <span class="method-name">to_s</span><span class="method-args">()</span>
+          <a href="Domain.src/M000088.html" target="Code" class="method-signature"
+            onclick="popupCode('Domain.src/M000088.html');return false;">
+          <span class="method-name">overlaps?</span><span class="method-args">(domain)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Compares end position of_self_ to start position of <em>domain</em>.
+Returns true if positions overlap, false otherwise
+</p>
+        </div>
+      </div>
+
+      <div id="method-M000087" class="method-detail">
+        <a name="M000087"></a>
+
+        <div class="method-heading">
+          <a href="Domain.src/M000087.html" target="Code" class="method-signature"
+            onclick="popupCode('Domain.src/M000087.html');return false;">
+          <span class="method-name">to_s</span><span class="method-args">(clans = false)</span>
           </a>
         </div>
       

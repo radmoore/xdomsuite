@@ -146,7 +146,7 @@ class Parser
       p = d = nil
       length = 0
       
-      next if (/^#{@comment}/.match(line) || /^$/.match(line))
+      #next if (/^#{@comment}/.match(line) || /^$/.match(line))
 
       while(line = hmmout.gets)
         line.chomp!
@@ -229,8 +229,9 @@ class Proteome
       raise "Unsupported file type #{@file_ext}"
     end
     @total_proteins   = @proteins.size
-    @uniq_domains   = @domains.keys.size
+    @uniq_domains   = @domains.size
     @current_prot = 0
+    @domains2go = nil
   end
 
   attr_reader :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains, :clans, :names
@@ -257,11 +258,26 @@ class Proteome
     update_domains()
   end
 
+  # return a list of all domain ids that occur at least once in each proteome
+  def intersection_of_domains(other_proteome)
+    return @domains.keys & other_proteome.domains_hash.keys
+  end
+
+  # return a list of all domain ids that occur at least once in one of the proteomes
+  def union_of_domains(other_proteome)
+    return @domains.keys | other_proteome.domains_hash.keys
+  end
+
   # returns a random protein object
   # or nil
   def grab
     return nil if @proteins.keys.empty?
     return @proteins[@proteins.keys[rand(@proteins.size)]]
+  end
+
+  # returns all proteins that have more than 1 domain
+  def get_multidomain_proteins
+    return @proteins.values.select{|p| p.is_multidomain?}
   end
 
   # Returns string representation of self
@@ -306,6 +322,10 @@ class Proteome
     return doms.flatten
   end
 
+  def domains_hash
+    return @domains
+  end
+
 
   # Returns an array of domain identifiers representing the unique set of domains present in self 
   def get_all_uniq_doms
@@ -315,13 +335,17 @@ class Proteome
   # wrapper around same method in
   # protein
   def pfam_A
-    @proteins.values.collect{|p| p.pfam_A }
+    doms = Array.new
+    @proteins.values.each{|p| doms += p.pfam_A }
+    return doms
   end
 
   # wrapper around same method in
   # protein
   def pfam_B
-    @proteins.values.collect{|p| p.pfam_B }
+    doms = Array.new
+    @proteins.values.each{|p| doms += p.pfam_B }
+    return doms
   end
 
 
@@ -467,28 +491,81 @@ class Proteome
   # * return number of successfully attached sequences
   def attach_fasta(fastafile)
     f = File.open(fastafile, "r")
-    seq = String.new
-    prot = false
     while(line = f.gets)
       line.chomp!
       if (m = FASTAHEAD.match(line))
-        if (prot)
-          @proteins[prot.pid].sequence = seq
-          prot.domains.each{|d| d.sequence = seq[(d.from-1)..(d.to-1)]}
-        end
-        seq = ""
-        prot = @proteins.fetch(m[1], false)
-        next
+        pid = m[1]
+        self.add_protein(Protein.new(pid)) unless @proteins.member?(pid)
+      else
+        seq = line
+        @proteins[pid].sequence += seq
       end
-      next unless (prot)
-      seq += line
-    end
-    if (prot)
-      @proteins[prot.pid].sequence = seq
-      prot.domains.each{|d| d.sequence = seq[(d.from-1)..(d.to-1)]}
     end
     f.close
   end
+
+  # Provides an interface to attach an annot file from BLAST2GO which allows to map
+  # GO terms to domains via the proteins
+  #
+  # Will add the possiblity to collect all GO terms of a domain from all proteins it
+  # occurs in.
+  def attach_blast2go_annot(file)
+    f = File.open(file, "r")
+    while(line = f.gets)
+      line.chomp!
+      pid, goid = line.split("\t")[0,2]
+      next unless @proteins.include?(pid)
+      @proteins[pid].goterms[goid] = 1 unless @proteins[pid].goterms.include?(goid)
+    end
+    update_domains2go()
+  end
+
+  def update_domains2go
+    @domains2go = Hash.new([])
+    @domains.each do |did, pids|
+      pids.each{|pid| @domains2go[did] += @proteins[pid].goterms.keys}
+    end
+  end
+
+  def domain2go(did)
+    return @domains2go[did]
+  end
+
+  # Provides an interface to attach a GFF file to the Domain annotation in _self_
+  #
+  # Requires that gene annotation is reported by maker, i.e. source (2nd column) == "maker".
+  # Pfam domains are then added as attributes to the mRNA entry that codes for the Protein
+  # containing the individual domain.
+  def attach_gff3(file)
+    f = File.open(file, "r")
+    while(line = f.gets)
+      line.chomp!
+      next if line[0,1] == "#"
+      next unless line.split("\t").count == 9
+      seqid, source, type, start, stop, score, strand, phase, attributes = line.split("\t")
+      next unless source == "maker"
+      cl = ChromosomalLocation.new(seqid, source, type, start, stop, score, strand, phase, attributes)
+      next unless cl.type == "mRNA"
+      attrs = cl.attributes_hash
+      next unless attrs['ID'] or attrs['Parent']
+      next unless @proteins[attrs['ID']] or @proteins[attrs['Parent']]
+      proteins2check = Array.new
+      proteins2check << @proteins[attrs['ID']] if attrs['ID'] and @proteins.include?(attrs['ID'])
+      proteins2check << @proteins[attrs['Parent']] if attrs['Parent'] and @proteins.include?(attrs['Parent'])
+      proteins2check.each do |p|
+        p.domains.each{|d| cl.attributes_string += "Pfam=#{d.acc};"}
+        p.chromosomal_locations[cl.type] = cl
+      end
+    end
+  end
+
+  # outputs domain annotation of the proteome in gff3 format
+  def to_gff3
+    @proteins.each do |pid, protein|
+      protein.chromosomal_locations.each{|type, cl| puts cl.to_s}
+    end
+  end
+
 
   # Returns the protein with the ID _pid_, or nil if such a protein does not exist
   def get_prot(pid)
@@ -553,7 +630,7 @@ class Proteome
   # TODO:
   # * check number return
   def res_coverage(num = false)
-    cov = (@total_dom_residues.to_f/@total_prot_length.to_f)*100
+    cov = (@total_dom_residues.to_f/@total_prot_length.to_f)
     return num ? cov : sprintf('%.2f', cov)
   end
 
@@ -563,9 +640,9 @@ class Proteome
   # TODO:
   # * check number return
   def prot_coverage(num = false)
-    protwdoms = (@proteins.values.inject(0) {|sum, p| sum.succ if p.has_domains?})
-    cov = ( (100/@total_proteins.to_f) * protwdoms.to_f )
-#    return num ? cov : sprintf('%2f', cov)
+    protwdoms = (@proteins.values.select{|p| p.has_domains?}).count
+    cov = ( protwdoms.to_f / @total_proteins.to_f )
+    return num ? cov : sprintf('%2f', cov)
   end
 
   def resolve_overlaps(mode)
@@ -575,8 +652,14 @@ class Proteome
   end
 
   def simple_overlap_resolution
-    @proteins.values.each {|p| p.simple_overlap_resolution}
+    total_domains = 0
+    @proteins.values.each {|p| 
+      p.simple_overlap_resolution
+      total_domains += p.domains.length
+    }
+    update_domains()
 		update_arrangements()
+    @total_domains = total_domains
     return nil
   end
 
@@ -591,6 +674,12 @@ class Proteome
   def annotate_with_context(xdom)
 
   end
+
+  def add_protein(p)
+    @proteins[p.pid] = p unless @proteins.member?(p.pid)
+    @total_proteins += 1
+  end
+
 
 private
 
@@ -613,14 +702,13 @@ private
     new_doms = Hash.new
     @proteins.each do |pid, p|
       p.domains.each do |d|
-        setid = (@names) ? d.did : d.acc
-        setid = (@clans && (not d.cid.nil?)) ? d.cid : setid
-        new_doms[setid] = Array.new unless (new_doms.has_key?(setid))
-        new_doms[setid] << pid unless new_doms[setid].include?(pid)
+        new_doms[d.did] = Array.new unless (new_doms.has_key?(d.did))
+        new_doms[d.did] << pid unless new_doms[d.did].include?(pid)
       end
     end
     @domains = new_doms
-    return nil
+    @uniq_domains = @domains.size
+    return true
   end
 
   def get_species(filename)
@@ -776,6 +864,61 @@ private
     f.close
   end
 
+
+end
+
+# CLASS: CHROMOSOMALLOCATION
+class ChromosomalLocation
+  def initialize(seqid, source, type, start, stop, score, strand, phase, attributes)
+    @seqid = seqid
+    @source = seqid
+    @type = type
+    @start = start.to_i
+    @stop = stop.to_i
+    @score = score.to_f
+    @strand = strand
+    @phase = phase
+    @attributes_string = attributes
+    update_attributes_hash(@attributes_string)
+  end
+
+  attr_reader :seqid, :source, :type, :start, :stop, :score, :strand, :phase, :attributes_string, :attributes_hash
+
+  def attributes_string=(var)
+    @attributes_string = var
+    update_attributes_hash(var)
+  end
+
+  def attributes_hash=(var)
+    @attributes_hash = var
+    update_attributes_string(var)
+  end
+
+  def to_s
+    return [@seqid, @source, @type, @start.to_s, @stop.to_s, @score.to_s, @strand, @phase, @attributes_string].join("\t")
+  end
+
+  private
+
+  def update_attributes_hash(attr_string)
+    @attributes_hash = Hash.new
+    attr_string.split(";").each do |a|
+      key, value = a.split("=")
+      @attributes_hash[key] = value
+    end
+  end
+
+  def update_attributes_string(attr_hash)
+    @attributes_string = ""
+    keys = attr_hash.keys
+    @attributes_string << "ID=#{attr_hash['ID']};" if attr_hash.include?('ID')
+    @attributes_string << "Parent=#{attr_hash['Parent']};" if attr_hash.include?('Parent')
+    keys.each do |k|
+      next if k == 'ID' or k == 'Parent'
+      @attributes_string << "#{k}=#{attr_hash[k]};" 
+    end
+  end
+
 end
 
 # CLASS: PROTEIN
@@ -802,9 +945,15 @@ class Protein
     @clans = true
     @names = true
     @pfamb = false
+    @chromosomal_locations = Hash.new
+    @goterms = Hash.new
   end
-  attr_accessor :length, :sequence, :species, :comment, :sep, :pfamb
-	attr_reader :deleted, :pid, :arrstr, :clans, :names
+  attr_accessor :length, :species, :comment, :sep, :pfamb, :chromosomal_locations, :goterms
+	attr_reader :deleted, :pid, :arrstr, :clans, :names, :sequence
+  
+  def is_multidomain?
+    return @domains.size > 1
+  end
 
   def add_domain (domain)
     @domains.push(domain)
@@ -854,14 +1003,16 @@ class Protein
 
   # Wrapper for type_filter. Returns an array of Domain objects of type PfamA, or an empty array if no PfamA domains are found 
 	def pfam_A
-		p = self.type_filter('A')
-		return p.domains
+    return @domains.select{|d| d.type == 'A'}
+		#p = self.type_filter('A')
+		#return p.domains
 	end
 
   # Wrapper for type_filter. Returns an array of Domain objects of type PfamB, or an empty array if no PfamB domains are found
 	def pfam_B
-		p = self.type_filter('B')
-		return p.domains
+    return @domains.select{|d| d.type == 'B'}
+		#p = self.type_filter('B')
+		#return p.domains
 	end
 
   # Returns a copy of _self_, containing only Domains of _type_. If no Domain objects of _type_ are present in _self_,
@@ -1344,6 +1495,12 @@ class Protein
       end
     end
     return (fasta) ? fastaseq : interdom_seqs
+  end
+
+  def sequence=(seq)
+    @sequence = seq
+    @length = seq.length
+    @domains.each{|d| d.sequence = seq[(d.from-1)..(d.to-1)]}
   end
 
   protected
