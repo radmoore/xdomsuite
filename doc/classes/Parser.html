@@ -108,8 +108,9 @@ href="Array.html">Array</a> of protein objects
       <h3 class="section-bar">Methods</h3>
 
       <div class="name-list">
-      <a href="#M000001">new</a>&nbsp;&nbsp;
-      <a href="#M000002">pfamscan</a>&nbsp;&nbsp;
+      <a href="#M000043">hmmscan</a>&nbsp;&nbsp;
+      <a href="#M000041">new</a>&nbsp;&nbsp;
+      <a href="#M000042">pfamscan</a>&nbsp;&nbsp;
       </div>
     </div>
 
@@ -159,12 +160,12 @@ href="Array.html">Array</a> of protein objects
     <div id="methods">
       <h3 class="section-bar">Public Class methods</h3>
 
-      <div id="method-M000001" class="method-detail">
-        <a name="M000001"></a>
+      <div id="method-M000041" class="method-detail">
+        <a name="M000041"></a>
 
         <div class="method-heading">
-          <a href="Parser.src/M000001.html" target="Code" class="method-signature"
-            onclick="popupCode('Parser.src/M000001.html');return false;">
+          <a href="Parser.src/M000041.html" target="Code" class="method-signature"
+            onclick="popupCode('Parser.src/M000041.html');return false;">
           <span class="method-name">new</span><span class="method-args">(filename)</span>
           </a>
         </div>
@@ -178,20 +179,37 @@ Returns an instance of the <a href="Parser.html">Parser</a> class.
 
       <h3 class="section-bar">Public Instance methods</h3>
 
-      <div id="method-M000002" class="method-detail">
-        <a name="M000002"></a>
+      <div id="method-M000043" class="method-detail">
+        <a name="M000043"></a>
 
         <div class="method-heading">
-          <a href="Parser.src/M000002.html" target="Code" class="method-signature"
-            onclick="popupCode('Parser.src/M000002.html');return false;">
-          <span class="method-name">pfamscan</span><span class="method-args">(evalue=10, name=true)</span>
+          <a href="Parser.src/M000043.html" target="Code" class="method-signature"
+            onclick="popupCode('Parser.src/M000043.html');return false;">
+          <span class="method-name">hmmscan</span><span class="method-args">(evalue=10, name=true, custom=true)</span>
           </a>
         </div>
       
         <div class="method-description">
           <p>
-Calls the <a href="Parser.html#M000002">pfamscan</a> parser method (<a
-href="Parser.html#M000001">new</a> version), and returns an <a
+TODO: complete
+</p>
+        </div>
+      </div>
+
+      <div id="method-M000042" class="method-detail">
+        <a name="M000042"></a>
+
+        <div class="method-heading">
+          <a href="Parser.src/M000042.html" target="Code" class="method-signature"
+            onclick="popupCode('Parser.src/M000042.html');return false;">
+          <span class="method-name">pfamscan</span><span class="method-args">(evalue=10, name=true, length=true)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Calls the <a href="Parser.html#M000042">pfamscan</a> parser method (<a
+href="Parser.html#M000041">new</a> version), and returns an <a
 href="Array.html">Array</a> of protein objects. <a
 href="Domain.html">Domain</a> must have a score better than <tt>evalue</tt>
 before they are included. If <tt>name</tt> is <tt>true</tt>, then the

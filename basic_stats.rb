@@ -1,8 +1,13 @@
 #!/usr/bin/ruby
 
+def sum(values)
+  values = string_array2int_array(values)
+  values.inject(0) {|sum, x| sum += x}
+end
+
 def mean(values)
   values = string_array2int_array(values)
-	values.inject(0) {|sum, x| sum += x} / values.size.to_f
+	sum(values) / values.size.to_f
 end
 
 # Standard deviation
@@ -21,21 +26,17 @@ def rsd(values)
   (stdv*100)/aver
 end
 
-# Relative Standard deviation (LOW)
+# Relative Standard deviation
 def rel_stdv(values)
   values = string_array2int_array(values)
   aver = mean(values)
   aver/values.length
 end
 
-# Z-Score (distance of mean to outliers
-# devided by standard deviation - that is,
-# number of stdv steps necessary to reach
-# outlier)
+# Z-Score (distance of mean to outliers)
 def z_score(score, values)
   (score.to_i - mean(values))/stdv(values)
 end
-
 
 private
 
