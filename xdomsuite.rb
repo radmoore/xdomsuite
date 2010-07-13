@@ -68,7 +68,6 @@ class Parser
 
   # Returns an instance of the Parser class.
   def initialize(filename)
-		@testatt = "this is different from local"
     @filename = filename
     @file_ext = File.extname(@filename)
     @file_bn = File.basename(@filename, @file_ext)
