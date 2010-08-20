@@ -991,6 +991,10 @@ class Protein
     return @domains
   end
 
+	def domain_ids
+		@domains.collect{|d| d.did}
+	end
+
   # get a random domain
   def grab
     return nil if @domains.empty?
@@ -1425,26 +1429,52 @@ class Protein
     return (res) ? domres : round( ((domres.to_f/self.length.to_f)*100).to_f )
   end
 
+	# TODO: swap operation should be two operations
+	def edit_distance(prot)
 
-  # TODO
-  def edit_distance (protein, collapse=false)
-    arr1 = self.arrstr.split(';').sort
-    arr2 = protein.arrstr.split(';').sort
-    if (collapse)
-      arr1.uniq!
-      arr2.uniq!
-    end
-    operations = (arr1.length > arr2.length) ? (arr1.length-arr2.length) : (arr2.length-arr1.length)
-    # if add operations are sufficient to reach arrangement 2,
-    # than what arr1 and arr2 have in common makes up for the
-    # difference between both arrangements
-    return operations if ((arr1 & arr2).length == operations)
-    for i in 0..(arr1.length) do
-      break if (i > arr2.length)
-      operations += 2 unless (arr1[i] == arr2[i])
-    end
-    return operations
-  end
+		return 0 if self.arrstr == prot.arrstr
+		larr = (self.total_domains >= prot.total_domains) ? self.arrstr : prot.arrstr
+		sarr = (self.total_domains < prot.total_domains) ? self.arrstr : prot.arrstr
+
+		if (larr.include?(sarr))
+			# domains missing in the short arrangement
+			missing = larr.split(';') - sarr.split(';')
+			# incase there are multiple copies of the same domain
+			return missing.size unless (missing.size + sarr.split(';').size != larr.split(';').size)
+		end
+		
+		editop  = 0
+		domfreq = Hash.new(0)
+		larr.split(';').each{|did| domfreq[did] += 1}
+		# 3 operations: Add, Delete & Swap(delete followed by add)
+		larr.split(';').each do |did|
+			# add: occurs in larr but not in sarr
+			if (not sarr.split(';').member?(did))
+				editop += 1
+			else
+				if (domfreq[did] == 0)
+					editop += 1
+				else
+					domfreq
+
+				end
+			end
+		end
+		# delete: occurrs in sarr but not in larr
+		sarr.split(';').each do |did|
+			unless (larr.split(';').member?(did))
+				editop += 1
+				next
+			end
+		end
+		
+#		editop  = 0
+#		domfreq = Hash.new(0)
+#		larr.split(';').each{|did| domfreq[did] += 1}
+#		sarr.split(';').each{|did| domfreq[did] -= 1 if domfreq.has_key?(did)}
+#		domfreq.values.each{|freq| editop += 1 unless freq == 0}
+		return editop
+	end
 
   def jaccard_dist(protein, collapse=true)
     arrangement1 = self.domains.collect {|d| d.did}
