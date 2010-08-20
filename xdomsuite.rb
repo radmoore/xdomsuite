@@ -662,20 +662,13 @@ class Proteome
 	# TODO: check
 	# ADM comment: I am not sure the call to update_domains()
 	# is still necessary, as total_domains is set
-	# after iteration below (update:_domains() may
-	# however be up to something else that I cant see right now
+	# after iteration below (update_domains() may
+	# however be up to something else that I cant see right now)
     update_domains()
-	update_arrangements()
+	  update_arrangements()
     @total_domains = total_domains
     return nil
   end
-
-  def resolve_overlaps_with_sets
-    @proteins.values.each {|p| p.resolve_overlaps_with_sets}
-    update_arrangements()
-    return nil
-  end
-
 
   # TODO
   def annotate_with_context(xdom)
@@ -1053,6 +1046,10 @@ class Protein
 		return @collapsed
 	end
 
+  # TODO:
+  # * check if this actually works
+  # (is not used anymore, but could be
+  # useful)
   def has_overlaps?
     cdom = pdom = nil
     pos = 0
@@ -1069,102 +1066,9 @@ class Protein
     return false
   end
 
-  # Create all non-overlapping domain sets and find 
-  # the set that maximized coverage
-  def resolve_overlaps_with_sets
-    return self if self.total_domains < 2 # overlaps impossible
-  #  puts self.pid
-    v = true if (self.pid == 'BGIBMGA005287-PA')
-    non_overlapping = Array.new
-    pos = 0
-    until (pos == self.total_domains) 
-      non_overlapping << [self.domains[pos]]
-      non_overlapping << find_domainsets(self.domains[pos], pos)
-      pos += 1
-    end
-
-   # if (self.pid == 'BGIBMGA005287-PA')
-   #   c = 0
-   #   non_overlapping.each do |pos|
-   #     puts "SET: #{c}"
-   #     non_overlapping[c].each do |d|
-   #       puts "\t"+d.to_s
-   #     end
-   #     puts
-   #     c += 1
-   #   end
-   # end
-   # exit
-
-
-    # determine best set
-    maxpos = coverage = pos = 0
-    until (pos == non_overlapping.size)
-      c = 0
-      domarray = non_overlapping[pos]
- #     puts domarray.inspect if v
-      domarray.each {|d| c += d.length}
-      if (c > coverage)
-        coverage = c
-        maxpos = pos
-      end
-      pos += 1
-    end
-    if (self.pid == 'BGIBMGA005287-PA')
-      c = 0
-      non_overlapping.each do |pos|
-        puts "SET: #{c}"
-        non_overlapping[c].each do |d|
-          puts "\t"+d.to_s
-        end
-        puts
-        c += 1
-      end
-    end
-    @domains = non_overlapping[maxpos]
-    self.update_arrstr
-    return self
-  end
-
-  # find non-overlapping domain sets
-  def find_domainsets(cdom, pos)
-    v = true if (self.pid == 'BGIBMGA005287-PA')
-    puts "POS: #{pos}, cdom: #{cdom}" if v
-    cpos = 0
-    noover = Array.new
-    noover << cdom
-    until (cpos == self.total_domains)
-      if cpos == pos  
-        cpos += 1
-        next
-      end
-      dom = self.domains[cpos]
-      #if (cdom.overlaps?(dom))
-      if (cpos < pos)
-        if (cdom.to >= dom.from)
-          puts "#{cdom.did} [#{cdom.to}] overlaps with #{dom.did} [#{dom.from}]" if v
-        else
-          noover << dom
-        end
-      else
-        if (cdom.from >= dom.to)
-          puts "#{cdom.did} [#{cdom.to}] overlaps with #{dom.did} [#{dom.from}]" if v
-        else
-          noover << dom
-        end
-      end
-      cpos += 1
-    end
-    return (noover.empty?) ? nil : noover
-  end
-
-#  def overlaps?(domain)
-#    raise "overlap? requires formal paramter of type <DOMAIN>" unless (domain.instance_of?(Domain))
-#    return true if (self.to >= domain.from)
-#    return false
-#  end  
-
-
+  # Current default for overlap resolution.
+  # TODO:
+  # * check for completness
   def simple_overlap_resolution
     pos = 0
     pdom = cdom = nil
@@ -1213,15 +1117,22 @@ class Protein
     return self
   end
 
+  # Allows control over overlap resolution
+  # by setting type preference (currently only
+  # A or B) and evalue or coverage maximization.
+  #
   # TODO
-  # HACK alarm !
+  # * double check
+  # + incorp. switch for simple overlap res?
   # + sanitize
   # + shorten, check effciency
   # ACON: preference pfamA, maximize evalue
   # ACOV: preference pfamA, maximize coverage
   # BCON: preference pfamB, maximize evalue
   # BCOV: preference pfamB, maximize coverage
-  def resolve_overlaps(mode=nil)
+  def resolve_overlaps(simple = true, mode=nil)
+    return simple_overlap_resolution() if simple
+
     raise "Please select overlap resolution mode: AE=0, AC=1, BE=2, BC=3" if (mode.nil?)
     raise "Invalid resolution mode: AE=0, AC=1, BE=2, BC=3" unless ((0 <= mode) && (mode <= 3))
 
