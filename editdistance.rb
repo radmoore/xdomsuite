@@ -11,4 +11,3 @@ puts "P1: ", p1
 puts "P2: ", p2
 
 puts "The edit distance from p1 to p2 is: "+ p1.edit_distance(p2).to_s+" operations"
-

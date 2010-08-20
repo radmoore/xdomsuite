@@ -29,8 +29,10 @@
 # * if protein length unknown, take stop pos of last domain as length
 #
 #===Credits
-#Andrew D. Moore (radmoore@uni-muenster.de)
-#
+# Andrew D. Moore (radmoore@uni-muenster.de)
+# Lothar Wissler (l.wissler@uni-muenster.de)
+# Fabian Zimmer (f.zimmer@uni-muenster.de)
+# 
 #===Version
 # rv 2.4a
 
@@ -1429,53 +1431,6 @@ class Protein
     return (res) ? domres : round( ((domres.to_f/self.length.to_f)*100).to_f )
   end
 
-	# TODO: swap operation should be two operations
-	def edit_distance(prot)
-
-		return 0 if self.arrstr == prot.arrstr
-		larr = (self.total_domains >= prot.total_domains) ? self.arrstr : prot.arrstr
-		sarr = (self.total_domains < prot.total_domains) ? self.arrstr : prot.arrstr
-
-		if (larr.include?(sarr))
-			# domains missing in the short arrangement
-			missing = larr.split(';') - sarr.split(';')
-			# incase there are multiple copies of the same domain
-			return missing.size unless (missing.size + sarr.split(';').size != larr.split(';').size)
-		end
-		
-		editop  = 0
-		domfreq = Hash.new(0)
-		larr.split(';').each{|did| domfreq[did] += 1}
-		# 3 operations: Add, Delete & Swap(delete followed by add)
-		larr.split(';').each do |did|
-			# add: occurs in larr but not in sarr
-			if (not sarr.split(';').member?(did))
-				editop += 1
-			else
-				if (domfreq[did] == 0)
-					editop += 1
-				else
-					domfreq
-
-				end
-			end
-		end
-		# delete: occurrs in sarr but not in larr
-		sarr.split(';').each do |did|
-			unless (larr.split(';').member?(did))
-				editop += 1
-				next
-			end
-		end
-		
-#		editop  = 0
-#		domfreq = Hash.new(0)
-#		larr.split(';').each{|did| domfreq[did] += 1}
-#		sarr.split(';').each{|did| domfreq[did] -= 1 if domfreq.has_key?(did)}
-#		domfreq.values.each{|freq| editop += 1 unless freq == 0}
-		return editop
-	end
-
   def jaccard_dist(protein, collapse=true)
     arrangement1 = self.domains.collect {|d| d.did}
     arrangement2 = protein.domains.collect {|d| d.did}
@@ -1490,6 +1445,82 @@ class Protein
     jaccard_coef = (intersect.size.to_f/union.size.to_f)
     return round(1-jaccard_coef)
   end
+
+  # Return the domain edit distance of two proteins. The edit distance
+  # is calculated by conducting a NW-like alignment of the domain IDs, and counting
+  # the number of non-aligned domains. The returned integer can be interpreted
+  # as the number of edit operations necessary to go from one arrangement
+  # to another.
+  # 
+  # This is loosely based on the domain distance
+  # (Bjoerklund et al, 2005), albeit without affine gap penalties
+  # and with mismatch penalties.
+  #
+  # Returns 0 if arrangements are identical, -1 if no domains are shared
+  # otherwise a value > 0 that indicates the number of operations.
+  #
+  # TODO:
+  # * Double check
+  # * Affine gap penalties?
+  def edit_distance(protein, gap = -0.01, match = 1, mmatch = -1)
+
+    return 0 if (protein.arrstr == self.arrstr)
+
+    p1 = self.domains
+    p2 = protein.domains
+    rows = p1.length + 1
+    cols = p2.length + 1
+
+    # Initiate alignment lattice
+    lattice = Array.new(rows) {|i| Array.new(cols, 0)}
+
+    # Calculate alignment lattice
+    1.upto(p1.length) do |i|
+      1.upto(p2.length) do |j|
+        lattice[i][j] = [
+          lattice[i-1][j-1] + ((p1[i-1].did == p2[j-1].did) ? match : mmatch),
+          lattice[i-1][j] + gap,
+          lattice[i][j-1] + gap
+        ].max
+      end
+    end
+
+    i = p1.length
+    j = p2.length
+    edit_distance = 0
+
+    # Traceback
+    while (i > 0 && j > 0)
+      s_current = lattice[i][j]
+      s_diag = lattice[i-1][j-1]
+      s_up   = lattice[i][j-1]
+      s_neig = lattice[i-1][j]
+      if (s_current == s_diag + ((p1[i-1].did == p2[j-1].did) ? match : mmatch))
+        i -= 1
+        j -= 1
+      elsif (s_current == s_neig + gap)
+        i -= 1
+        edit_distance += 1
+      elsif (s_current == s_up + gap)
+        j -= 1
+        edit_distance += 1
+      end
+    end
+
+    while (i > 0)
+      edit_distance += 1
+      i -= 1
+    end
+
+    while (j > 0)
+      edit_distance += 1
+      j -= 1
+    end
+
+    return (p1.length + p2.length >= edit_distance) ?  -1 : edit_distance
+
+  end
+
 
   def get_interdoms(min=20)
     return nil if (self.total_domains == 0)
