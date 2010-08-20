@@ -172,7 +172,7 @@ class Parser
 
 end
 
-#=== XDOM
+#=== Proteome
 #Class for creating a proteome-like object from a xdom file. Provides methods for iteration and filtering, sequence association
 #collapsing repeats, retreiving statistics etc 
 #
@@ -180,11 +180,11 @@ end
 # 
 # require 'xdomsuite'
 #
-# xdom = XDOM.new(ARGV[0], 0.001)
+# xdom = Proteome.new(ARGV[0], 0.001)
 # puts xdom.res_coverage
 # puts xdom.prot_coverage
 # 
-# while(xdom.has_next)
+# while(xdom.has_next?)
 #  p = xdom.next_prot
 #  next unless p.has_domains?
 #  p.domains.each {|d| puts d.did}
@@ -193,8 +193,8 @@ end
 #
 #====Open Issues /  TODOs
 # 
-# * Currently only supports custom pfamscan output 
 # * Check file type validity
+# * Many more...
 class Proteome
 
   HEADERre = /^>(\S+)\s+(\d+)$/
@@ -420,7 +420,7 @@ class Proteome
   end
 
   # TODO: this does not work - seems to modify self (no deep copy?)!!!
-  # Returns a new xdom where all domain that are not of type _type_ are removed
+  # Returns a new proteome where all domains that are not of type _type_ are removed
   # See Protein.type_filter
 	def filter_by_type(type)
     newxdom = self.dup
@@ -625,6 +625,50 @@ class Proteome
     end
     return uniq.values
   end
+
+  # Returns a list of all proteins, or maximum +limit+, 
+  # that share a distance to each other of no more than
+  # dis. Currently only edit_distance support.
+  def collect_by_similarity(thres, limit=100, method='edit')
+    raise "Invalid method #{method}. Currently only 'edit' is supported" unless (method == 'edit')
+    results = Array.new
+    i = 0
+    @proteins.values.each do |p1|
+      @proteins.values.each do |p2|
+        break if i >= limit
+        next if p1.pid == p2.pid
+        if (p1.edit_distance(p2) <= thres)
+          next if (p1.edit_distance(p2) == -1)
+          results.push(p1, p2)
+          i += 1
+        end
+      end
+    end
+    return results || nil
+  end
+
+  # Returns a list of proteins (up to limit) that have a distance
+  # no larger than thres to a query protein. Currently only
+  # edit distance supported.
+  # TODO:
+  # * does not work
+  # * very slow
+  def find_by_similarity(query_prot, thres=2, limit=100, method='edit')
+    raise "Invalid method #{method}. Currently only 'edit' is supported" unless (method == 'edit')
+    results = Array.new
+    i = 0
+    @proteins.values.each do |p|
+      puts query_prot
+      break if i >= limit
+      next if p.pid == query_prot.pid
+      next if query_prot.edit_distance(p) == -1
+      puts p
+      results << p if (query_prot.edit_distance(p) <= thres)
+      limit += 1
+    end
+    return results
+  end
+
 
   # Returns the procentage of amino acid residues that fall into an annotated region (domain). 
   # If _num_ is _true_ , a float is returned. Otherwise a formatted string is returned.

@@ -4,10 +4,11 @@ require 'xdomsuite'
 
 hsap = Proteome.new(ARGV.shift, 0.001)
 
-p1 = hsap.grab
-p2 = hsap.grab
+prot = hsap.grab
 
-puts "P1: ", p1
-puts "P2: ", p2
+puts "Searching with #{prot.arrstr}"
+test = hsap.collect_by_similarity(1)
+test = hsap.find_by_similarity(prot, 2, 5)
 
-puts "The edit distance from p1 to p2 is: "+ p1.edit_distance(p2).to_s+" operations"
+puts "Found #{test.length} results:"
+test.each{|p| puts p}
