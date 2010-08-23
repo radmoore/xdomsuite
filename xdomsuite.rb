@@ -322,10 +322,15 @@ class Proteome
     return doms.flatten
   end
 
+  # returns a hash of all domains, where key = id and value = Domain instance
   def domains_hash
     return @domains
   end
 
+  # returns a hash of all proteins, where key = id and value = Protein instance
+  def proteins_hash
+    return @proteins
+  end
 
   # Returns an array of domain identifiers representing the unique set of domains present in self 
   def get_all_uniq_doms
@@ -648,6 +653,18 @@ class Proteome
   def resolve_overlaps(mode)
     @proteins.values.each {|p| p.resolve_overlaps(mode)}
 		update_arrangements()
+    return nil
+  end
+  
+  def remove_overlaps_lw
+    total_domains = 0
+    @proteins.values.each {|p| 
+      p.remove_overlaps_lw
+      total_domains += p.domains.length
+    }
+    update_domains()
+	  update_arrangements()
+    @total_domains = total_domains
     return nil
   end
 
@@ -1158,6 +1175,44 @@ class Protein
 #    return false
 #  end  
 
+  def has_overlapping_domains?
+    return false if self.domains.count < 2
+    posHash = self.prot_dom_coverage
+    return false if posHash.values.reject{|e| e == 0 or e == 1}.count == 0
+    return true
+  end
+
+  def prot_dom_coverage
+    posHash = Hash.new(0)
+    self.domains.each do |domain|
+      domain.from.upto(domain.to).each{|i| posHash[i] += 1}
+    end
+    return posHash
+  end
+
+  def remove_overlaps_lw
+    while self.has_overlapping_domains?
+      # 1. identify region where domain coverage > 1
+      start = 0
+      stop = self.length
+      covHash = self.prot_dom_coverage
+      0.upto(self.length).each{|i| if covHash[i] > 1; start = i; break; end }
+      start.upto(self.length).each{|i| if covHash[i] < 2; stop = i-1; break; end }
+      # 2. identify all domains that overlap with this region
+      overlappingDomains = self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}
+      # 3. find most significant domain in this set
+      overlappingDomains.sort!{|d1,d2| d1.evalue <=> d2.evalue}
+      best = overlappingDomains.first
+      # 4. remove all domains in the set that overlap with the best domain
+      start, stop = best.from, best.to
+      self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}.each do |d|
+        next if d == best
+        self.domains.delete(d)
+      end
+    end
+    return self
+  end
+
 
   def simple_overlap_resolution
     pos = 0
@@ -1597,6 +1652,12 @@ class Domain
     raise "overlap? requires formal paramter of type <DOMAIN>" unless (domain.instance_of?(Domain))
     return true if (self.to >= domain.from)
     return false
+  end
+
+  def overlaps_with_positions?(from,to)
+    return false if self.from < from and self.to < from
+    return false if self.from > to and self.to > to
+    return true
   end
 
   private
