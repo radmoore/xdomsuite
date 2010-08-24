@@ -655,14 +655,13 @@ class Proteome
   # * very slow
   def find_by_similarity(query_prot, thres=2, limit=100, method='edit')
     raise "Invalid method #{method}. Currently only 'edit' is supported" unless (method == 'edit')
+    puts "limiting search to #{limit}"
     results = Array.new
     i = 0
     @proteins.values.each do |p|
-      puts query_prot
       break if i >= limit
       next if p.pid == query_prot.pid
       next if query_prot.edit_distance(p) == -1
-      puts p
       results << p if (query_prot.edit_distance(p) <= thres)
       limit += 1
     end
@@ -1472,7 +1471,7 @@ class Protein
       j -= 1
     end
 
-    return (p1.length + p2.length >= edit_distance) ?  -1 : edit_distance
+    return (p1.length + p2.length <= edit_distance) ?  -1 : edit_distance
 
   end
 
