@@ -130,7 +130,7 @@ class Parser
       did = did.split('.')[0] if (/.+\.\d+/.match(did))
       @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
       p = @proteins[seq_id]
-      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, p.pid, cla_id)
+      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, bit_sc.to_f, p.pid, cla_id)
       p.add_domain(d)
     end
     hmmout.close
@@ -256,6 +256,18 @@ class Proteome
     @proteins.values.each {|p| p.names = var}
     update_arrangements()
     update_domains()
+  end
+
+  # return a list of domain instances of a specific id
+  # can also return a list of domain instances of a specific id that occur only in a specific protein
+  def find_domains(did, pid=nil)
+    return [] unless @domains[did]
+    pids = @domains[did]
+    return [] if pid and not pids.include?(pid)
+    pids = [pid] if pid
+    doms = Array.new
+    pids.collect{|pid| @proteins[pid]}.collect{|prot| doms += prot.domains}
+    return doms.select{|dom| dom if dom.did == did}
   end
 
   # return a list of all domain ids that occur at least once in each proteome
@@ -791,7 +803,7 @@ private
           end
           from = (envelope) ? env_st.to_i : aln_st.to_i
           to = (envelope) ? env_en.to_i : aln_en.to_i         
-          d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, "", hmm_ac)
+          d = Domain.new(from, to, hmm_na, eva_ht.to_f, bit_sc.to_f, p.pid, cla_id, "", hmm_ac)
           p.add_domain(d)
           @total_dom_residues += (to - from)
           did = (@names) ? hmm_na : hmm_ac
@@ -1615,7 +1627,7 @@ class Domain
   CTYPE = /^COILS.+/
   DTYPE = /^DIS.+/
 
-  def initialize (from, to, did, evalue, pid, clanid=nil, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
+  def initialize (from, to, did, evalue, bitscore, pid, clanid=nil, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
     @from = from
     @to = to
     @did = did
@@ -1623,6 +1635,7 @@ class Domain
     @go = go
     @cid = clanid
     @evalue = evalue
+    @bitscore = bitscore
     @sequence = sequence
     #@protein = protein
     @pid = pid
@@ -1630,7 +1643,7 @@ class Domain
     @comment = comment
     @length = @to - @from
   end
-  attr_accessor :from, :to, :did, :acc, :go, :cid, :evalue, :sequence, :type, :pid, :comment, :length
+  attr_accessor :from, :to, :did, :acc, :go, :cid, :evalue, :bitscore, :sequence, :type, :pid, :comment, :length
 
   def fasta_seq
     return (sequence.empty?) ?
