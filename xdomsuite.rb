@@ -3,7 +3,7 @@
 #==xdomsuite - A suite of simple procedures for working with domain data
 # 
 # The xdomsuite contains 2 primary classes, and two 'utility' classes. The way I use these classes, is that I create either a xdom object
-# using XDOM or a collection of Protein objects using Parser. That is, I do not use the classes Protein or Domain directly (hence utility).
+# using Proteome or a collection of Protein objects using Parser. That is, I do not use the classes Protein or Domain directly (hence utility).
 # 
 # But one could, if one wanted.
 # 
@@ -11,7 +11,7 @@
 #
 #
 # * Parser: Parse hmmer output to proteins and domains
-# * XDOM: Parse xdom files to proteome-like objects
+# * Proteome: Parse domain annotation files to proteome-like objects
 # 
 #===Utility classes
 #
@@ -722,10 +722,10 @@ class Proteome
   end
 
   # with the new method by lo, this
-  # is now depricated and will be
+  # is now deprecated and will be
   # removed in subsequent commits
   def simple_overlap_resolution
-    STDERR.puts "*** Method #{simple_overlap_resolution} is depricated. Use resolve_overlaps instead"
+    STDERR.puts "*** Method #{simple_overlap_resolution} is deprecated. Use resolve_overlaps instead"
     total_domains = 0
     @proteins.values.each {|p| 
       p.simple_overlap_resolution
@@ -1158,7 +1158,7 @@ class Protein
   end
 
 
-  # This method is depricated and will 
+  # This method is deprecated and will 
   # be removed in a future commit
   def simple_overlap_resolution
     STDERR.puts "*** Method #{simple_overlap_resolution} is to be removed. Use #{resolve_overlaps} instead"
@@ -1520,6 +1520,8 @@ class Protein
       j -= 1
     end
 
+    # more edit operations that sum of domains in proteins = arrangements
+    # do not share any domains.
     return (p1.length + p2.length <= edit_distance) ?  -1 : edit_distance
 
   end
