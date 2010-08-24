@@ -132,7 +132,7 @@ class Parser
       did = did.split('.')[0] if (/.+\.\d+/.match(did))
       @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
       p = @proteins[seq_id]
-      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, p.pid, cla_id)
+      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, bit_sc.to_f, p.pid, cla_id)
       p.add_domain(d)
     end
     hmmout.close
@@ -260,6 +260,18 @@ class Proteome
     update_domains()
   end
 
+  # return a list of domain instances of a specific id
+  # can also return a list of domain instances of a specific id that occur only in a specific protein
+  def find_domains(did, pid=nil)
+    return [] unless @domains[did]
+    pids = @domains[did]
+    return [] if pid and not pids.include?(pid)
+    pids = [pid] if pid
+    doms = Array.new
+    pids.collect{|pid| @proteins[pid]}.collect{|prot| doms += prot.domains}
+    return doms.select{|dom| dom if dom.did == did}
+  end
+
   # return a list of all domain ids that occur at least once in each proteome
   def intersection_of_domains(other_proteome)
     return @domains.keys & other_proteome.domains_hash.keys
@@ -324,10 +336,15 @@ class Proteome
     return doms.flatten
   end
 
+  # returns a hash of all domains, where key = id and value = Domain instance
   def domains_hash
     return @domains
   end
 
+  # returns a hash of all proteins, where key = id and value = Protein instance
+  def proteins_hash
+    return @proteins
+  end
 
   # Returns an array of domain identifiers representing the unique set of domains present in self 
   def get_all_uniq_doms
@@ -695,6 +712,18 @@ class Proteome
 		update_arrangements()
     return nil
   end
+  
+  def remove_overlaps_lw
+    total_domains = 0
+    @proteins.values.each {|p| 
+      p.remove_overlaps_lw
+      total_domains += p.domains.length
+    }
+    update_domains()
+	  update_arrangements()
+    @total_domains = total_domains
+    return nil
+  end
 
   def simple_overlap_resolution
     total_domains = 0
@@ -812,7 +841,7 @@ private
           end
           from = (envelope) ? env_st.to_i : aln_st.to_i
           to = (envelope) ? env_en.to_i : aln_en.to_i         
-          d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, "", hmm_ac)
+          d = Domain.new(from, to, hmm_na, eva_ht.to_f, bit_sc.to_f, p.pid, cla_id, "", hmm_ac)
           p.add_domain(d)
           @total_dom_residues += (to - from)
           did = (@names) ? hmm_na : hmm_ac
@@ -1575,7 +1604,7 @@ class Domain
   CTYPE = /^COILS.+/
   DTYPE = /^DIS.+/
 
-  def initialize (from, to, did, evalue, pid, clanid=nil, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
+  def initialize (from, to, did, evalue, bitscore, pid, clanid=nil, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
     @from = from
     @to = to
     @did = did
@@ -1583,6 +1612,7 @@ class Domain
     @go = go
     @cid = clanid
     @evalue = evalue
+    @bitscore = bitscore
     @sequence = sequence
     #@protein = protein
     @pid = pid
@@ -1590,7 +1620,7 @@ class Domain
     @comment = comment
     @length = @to - @from
   end
-  attr_accessor :from, :to, :did, :acc, :go, :cid, :evalue, :sequence, :type, :pid, :comment, :length
+  attr_accessor :from, :to, :did, :acc, :go, :cid, :evalue, :bitscore, :sequence, :type, :pid, :comment, :length
 
   def fasta_seq
     return (sequence.empty?) ?
@@ -1612,6 +1642,12 @@ class Domain
     raise "overlap? requires formal paramter of type <DOMAIN>" unless (domain.instance_of?(Domain))
     return true if (self.to >= domain.from)
     return false
+  end
+
+  def overlaps_with_positions?(from,to)
+    return false if self.from < from and self.to < from
+    return false if self.from > to and self.to > to
+    return true
   end
 
   private

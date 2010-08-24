@@ -97,42 +97,45 @@ CLASS: PROTEIN TODO
       <h3 class="section-bar">Methods</h3>
 
       <div class="name-list">
-      <a href="#M000051">add_domain</a>&nbsp;&nbsp;
-      <a href="#M000052">clans=</a>&nbsp;&nbsp;
-      <a href="#M000076">collapse</a>&nbsp;&nbsp;
-      <a href="#M000077">collapse!</a>&nbsp;&nbsp;
-      <a href="#M000064">collapsed?</a>&nbsp;&nbsp;
-      <a href="#M000078">coverage</a>&nbsp;&nbsp;
-      <a href="#M000054">domains</a>&nbsp;&nbsp;
-      <a href="#M000079">edit_distance</a>&nbsp;&nbsp;
-      <a href="#M000067">find_domainsets</a>&nbsp;&nbsp;
-      <a href="#M000070">find_doms</a>&nbsp;&nbsp;
-      <a href="#M000071">get_cooc_doms</a>&nbsp;&nbsp;
-      <a href="#M000082">get_interdom_seq</a>&nbsp;&nbsp;
-      <a href="#M000081">get_interdoms</a>&nbsp;&nbsp;
-      <a href="#M000055">grab</a>&nbsp;&nbsp;
-      <a href="#M000056">has_domains?</a>&nbsp;&nbsp;
-      <a href="#M000065">has_overlaps?</a>&nbsp;&nbsp;
-      <a href="#M000050">is_multidomain?</a>&nbsp;&nbsp;
-      <a href="#M000080">jaccard_dist</a>&nbsp;&nbsp;
-      <a href="#M000063">member?</a>&nbsp;&nbsp;
-      <a href="#M000053">names=</a>&nbsp;&nbsp;
-      <a href="#M000049">new</a>&nbsp;&nbsp;
-      <a href="#M000074">next_dom</a>&nbsp;&nbsp;
-      <a href="#M000059">pfam_A</a>&nbsp;&nbsp;
-      <a href="#M000060">pfam_B</a>&nbsp;&nbsp;
-      <a href="#M000069">resolve_overlaps</a>&nbsp;&nbsp;
-      <a href="#M000066">resolve_overlaps_with_sets</a>&nbsp;&nbsp;
-      <a href="#M000075">rewind</a>&nbsp;&nbsp;
-      <a href="#M000083">sequence=</a>&nbsp;&nbsp;
-      <a href="#M000068">simple_overlap_resolution</a>&nbsp;&nbsp;
-      <a href="#M000073">to_arr_s</a>&nbsp;&nbsp;
-      <a href="#M000072">to_s</a>&nbsp;&nbsp;
-      <a href="#M000057">total_domains</a>&nbsp;&nbsp;
-      <a href="#M000061">type_filter</a>&nbsp;&nbsp;
-      <a href="#M000062">type_filter!</a>&nbsp;&nbsp;
-      <a href="#M000058">uniq_doms</a>&nbsp;&nbsp;
-      <a href="#M000084">update_arrstr</a>&nbsp;&nbsp;
+      <a href="#M000057">add_domain</a>&nbsp;&nbsp;
+      <a href="#M000058">clans=</a>&nbsp;&nbsp;
+      <a href="#M000085">collapse</a>&nbsp;&nbsp;
+      <a href="#M000086">collapse!</a>&nbsp;&nbsp;
+      <a href="#M000070">collapsed?</a>&nbsp;&nbsp;
+      <a href="#M000087">coverage</a>&nbsp;&nbsp;
+      <a href="#M000060">domains</a>&nbsp;&nbsp;
+      <a href="#M000088">edit_distance</a>&nbsp;&nbsp;
+      <a href="#M000073">find_domainsets</a>&nbsp;&nbsp;
+      <a href="#M000079">find_doms</a>&nbsp;&nbsp;
+      <a href="#M000080">get_cooc_doms</a>&nbsp;&nbsp;
+      <a href="#M000091">get_interdom_seq</a>&nbsp;&nbsp;
+      <a href="#M000090">get_interdoms</a>&nbsp;&nbsp;
+      <a href="#M000061">grab</a>&nbsp;&nbsp;
+      <a href="#M000062">has_domains?</a>&nbsp;&nbsp;
+      <a href="#M000074">has_overlapping_domains?</a>&nbsp;&nbsp;
+      <a href="#M000071">has_overlaps?</a>&nbsp;&nbsp;
+      <a href="#M000056">is_multidomain?</a>&nbsp;&nbsp;
+      <a href="#M000089">jaccard_dist</a>&nbsp;&nbsp;
+      <a href="#M000069">member?</a>&nbsp;&nbsp;
+      <a href="#M000059">names=</a>&nbsp;&nbsp;
+      <a href="#M000055">new</a>&nbsp;&nbsp;
+      <a href="#M000083">next_dom</a>&nbsp;&nbsp;
+      <a href="#M000065">pfam_A</a>&nbsp;&nbsp;
+      <a href="#M000066">pfam_B</a>&nbsp;&nbsp;
+      <a href="#M000075">prot_dom_coverage</a>&nbsp;&nbsp;
+      <a href="#M000076">remove_overlaps_lw</a>&nbsp;&nbsp;
+      <a href="#M000078">resolve_overlaps</a>&nbsp;&nbsp;
+      <a href="#M000072">resolve_overlaps_with_sets</a>&nbsp;&nbsp;
+      <a href="#M000084">rewind</a>&nbsp;&nbsp;
+      <a href="#M000092">sequence=</a>&nbsp;&nbsp;
+      <a href="#M000077">simple_overlap_resolution</a>&nbsp;&nbsp;
+      <a href="#M000082">to_arr_s</a>&nbsp;&nbsp;
+      <a href="#M000081">to_s</a>&nbsp;&nbsp;
+      <a href="#M000063">total_domains</a>&nbsp;&nbsp;
+      <a href="#M000067">type_filter</a>&nbsp;&nbsp;
+      <a href="#M000068">type_filter!</a>&nbsp;&nbsp;
+      <a href="#M000064">uniq_doms</a>&nbsp;&nbsp;
+      <a href="#M000093">update_arrstr</a>&nbsp;&nbsp;
       </div>
     </div>
 
@@ -191,6 +194,11 @@ CLASS: PROTEIN TODO
           <td class="context-item-desc"></td>
         </tr>
         <tr class="top-aligned-row context-row">
+          <td class="context-item-name">goterms</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
           <td class="context-item-name">length</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc"></td>
@@ -235,12 +243,12 @@ CLASS: PROTEIN TODO
     <div id="methods">
       <h3 class="section-bar">Public Class methods</h3>
 
-      <div id="method-M000049" class="method-detail">
-        <a name="M000049"></a>
+      <div id="method-M000055" class="method-detail">
+        <a name="M000055"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000049.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000049.html');return false;">
+          <a href="Protein.src/M000055.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000055.html');return false;">
           <span class="method-name">new</span><span class="method-args">(pid, length = 0, sequence=String.new, species=String.new, comment=String.new, srcfile=String.new)</span>
           </a>
         </div>
@@ -251,12 +259,12 @@ CLASS: PROTEIN TODO
 
       <h3 class="section-bar">Public Instance methods</h3>
 
-      <div id="method-M000051" class="method-detail">
-        <a name="M000051"></a>
+      <div id="method-M000057" class="method-detail">
+        <a name="M000057"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000051.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000051.html');return false;">
+          <a href="Protein.src/M000057.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000057.html');return false;">
           <span class="method-name">add_domain</span><span class="method-args">(domain)</span>
           </a>
         </div>
@@ -265,12 +273,12 @@ CLASS: PROTEIN TODO
         </div>
       </div>
 
-      <div id="method-M000052" class="method-detail">
-        <a name="M000052"></a>
+      <div id="method-M000058" class="method-detail">
+        <a name="M000058"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000052.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000052.html');return false;">
+          <a href="Protein.src/M000058.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000058.html');return false;">
           <span class="method-name">clans=</span><span class="method-args">(var)</span>
           </a>
         </div>
@@ -279,12 +287,12 @@ CLASS: PROTEIN TODO
         </div>
       </div>
 
-      <div id="method-M000076" class="method-detail">
-        <a name="M000076"></a>
+      <div id="method-M000085" class="method-detail">
+        <a name="M000085"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000076.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000076.html');return false;">
+          <a href="Protein.src/M000085.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000085.html');return false;">
           <span class="method-name">collapse</span><span class="method-args">(repunit=2)</span>
           </a>
         </div>
@@ -293,29 +301,29 @@ CLASS: PROTEIN TODO
         </div>
       </div>
 
-      <div id="method-M000077" class="method-detail">
-        <a name="M000077"></a>
+      <div id="method-M000086" class="method-detail">
+        <a name="M000086"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000077.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000077.html');return false;">
+          <a href="Protein.src/M000086.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000086.html');return false;">
           <span class="method-name">collapse!</span><span class="method-args">(repunit=2)</span>
           </a>
         </div>
       
         <div class="method-description">
           <p>
-<a href="Protein.html#M000076">collapse</a> in place
+<a href="Protein.html#M000085">collapse</a> in place
 </p>
         </div>
       </div>
 
-      <div id="method-M000064" class="method-detail">
-        <a name="M000064"></a>
+      <div id="method-M000070" class="method-detail">
+        <a name="M000070"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000064.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000064.html');return false;">
+          <a href="Protein.src/M000070.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000070.html');return false;">
           <span class="method-name">collapsed?</span><span class="method-args">()</span>
           </a>
         </div>
@@ -324,12 +332,12 @@ CLASS: PROTEIN TODO
         </div>
       </div>
 
-      <div id="method-M000078" class="method-detail">
-        <a name="M000078"></a>
+      <div id="method-M000087" class="method-detail">
+        <a name="M000087"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000078.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000078.html');return false;">
+          <a href="Protein.src/M000087.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000087.html');return false;">
           <span class="method-name">coverage</span><span class="method-args">(res = false)</span>
           </a>
         </div>
@@ -337,17 +345,17 @@ CLASS: PROTEIN TODO
         <div class="method-description">
           <p>
 return procentage if res = false otherwise number of residues covered by <a
-href="Protein.html#M000054">domains</a>
+href="Protein.html#M000060">domains</a>
 </p>
         </div>
       </div>
 
-      <div id="method-M000054" class="method-detail">
-        <a name="M000054"></a>
+      <div id="method-M000060" class="method-detail">
+        <a name="M000060"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000054.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000054.html');return false;">
+          <a href="Protein.src/M000060.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000060.html');return false;">
           <span class="method-name">domains</span><span class="method-args">()</span>
           </a>
         </div>
@@ -356,12 +364,12 @@ href="Protein.html#M000054">domains</a>
         </div>
       </div>
 
-      <div id="method-M000079" class="method-detail">
-        <a name="M000079"></a>
+      <div id="method-M000088" class="method-detail">
+        <a name="M000088"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000079.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000079.html');return false;">
+          <a href="Protein.src/M000088.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000088.html');return false;">
           <span class="method-name">edit_distance</span><span class="method-args">(protein, collapse=false)</span>
           </a>
         </div>
@@ -373,12 +381,12 @@ TODO
         </div>
       </div>
 
-      <div id="method-M000067" class="method-detail">
-        <a name="M000067"></a>
+      <div id="method-M000073" class="method-detail">
+        <a name="M000073"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000067.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000067.html');return false;">
+          <a href="Protein.src/M000073.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000073.html');return false;">
           <span class="method-name">find_domainsets</span><span class="method-args">(cdom, pos)</span>
           </a>
         </div>
@@ -390,12 +398,12 @@ find non-overlapping domain sets
         </div>
       </div>
 
-      <div id="method-M000070" class="method-detail">
-        <a name="M000070"></a>
+      <div id="method-M000079" class="method-detail">
+        <a name="M000079"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000070.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000070.html');return false;">
+          <a href="Protein.src/M000079.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000079.html');return false;">
           <span class="method-name">find_doms</span><span class="method-args">(did)</span>
           </a>
         </div>
@@ -404,12 +412,12 @@ find non-overlapping domain sets
         </div>
       </div>
 
-      <div id="method-M000071" class="method-detail">
-        <a name="M000071"></a>
+      <div id="method-M000080" class="method-detail">
+        <a name="M000080"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000071.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000071.html');return false;">
+          <a href="Protein.src/M000080.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000080.html');return false;">
           <span class="method-name">get_cooc_doms</span><span class="method-args">(did)</span>
           </a>
         </div>
@@ -418,12 +426,12 @@ find non-overlapping domain sets
         </div>
       </div>
 
-      <div id="method-M000082" class="method-detail">
-        <a name="M000082"></a>
+      <div id="method-M000091" class="method-detail">
+        <a name="M000091"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000082.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000082.html');return false;">
+          <a href="Protein.src/M000091.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000091.html');return false;">
           <span class="method-name">get_interdom_seq</span><span class="method-args">(min=20, fasta=false)</span>
           </a>
         </div>
@@ -440,12 +448,12 @@ TODO
         </div>
       </div>
 
-      <div id="method-M000081" class="method-detail">
-        <a name="M000081"></a>
+      <div id="method-M000090" class="method-detail">
+        <a name="M000090"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000081.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000081.html');return false;">
+          <a href="Protein.src/M000090.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000090.html');return false;">
           <span class="method-name">get_interdoms</span><span class="method-args">(min=20)</span>
           </a>
         </div>
@@ -454,12 +462,12 @@ TODO
         </div>
       </div>
 
-      <div id="method-M000055" class="method-detail">
-        <a name="M000055"></a>
+      <div id="method-M000061" class="method-detail">
+        <a name="M000061"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000055.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000055.html');return false;">
+          <a href="Protein.src/M000061.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000061.html');return false;">
           <span class="method-name">grab</span><span class="method-args">()</span>
           </a>
         </div>
@@ -471,83 +479,13 @@ get a random domain
         </div>
       </div>
 
-      <div id="method-M000056" class="method-detail">
-        <a name="M000056"></a>
+      <div id="method-M000062" class="method-detail">
+        <a name="M000062"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000056.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000056.html');return false;">
+          <a href="Protein.src/M000062.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000062.html');return false;">
           <span class="method-name">has_domains?</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-        </div>
-      </div>
-
-      <div id="method-M000065" class="method-detail">
-        <a name="M000065"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000065.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000065.html');return false;">
-          <span class="method-name">has_overlaps?</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-        </div>
-      </div>
-
-      <div id="method-M000050" class="method-detail">
-        <a name="M000050"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000050.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000050.html');return false;">
-          <span class="method-name">is_multidomain?</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-        </div>
-      </div>
-
-      <div id="method-M000080" class="method-detail">
-        <a name="M000080"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000080.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000080.html');return false;">
-          <span class="method-name">jaccard_dist</span><span class="method-args">(protein, collapse=true)</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-        </div>
-      </div>
-
-      <div id="method-M000063" class="method-detail">
-        <a name="M000063"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000063.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000063.html');return false;">
-          <span class="method-name">member?</span><span class="method-args">(did)</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-        </div>
-      </div>
-
-      <div id="method-M000053" class="method-detail">
-        <a name="M000053"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000053.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000053.html');return false;">
-          <span class="method-name">names=</span><span class="method-args">(var)</span>
           </a>
         </div>
       
@@ -561,128 +499,7 @@ get a random domain
         <div class="method-heading">
           <a href="Protein.src/M000074.html" target="Code" class="method-signature"
             onclick="popupCode('Protein.src/M000074.html');return false;">
-          <span class="method-name">next_dom</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-        </div>
-      </div>
-
-      <div id="method-M000059" class="method-detail">
-        <a name="M000059"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000059.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000059.html');return false;">
-          <span class="method-name">pfam_A</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-Wrapper for <a href="Protein.html#M000061">type_filter</a>. Returns an
-array of <a href="Domain.html">Domain</a> objects of type PfamA, or an
-empty array if no PfamA <a href="Protein.html#M000054">domains</a> are
-found
-</p>
-        </div>
-      </div>
-
-      <div id="method-M000060" class="method-detail">
-        <a name="M000060"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000060.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000060.html');return false;">
-          <span class="method-name">pfam_B</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-Wrapper for <a href="Protein.html#M000061">type_filter</a>. Returns an
-array of <a href="Domain.html">Domain</a> objects of type PfamB, or an
-empty array if no PfamB <a href="Protein.html#M000054">domains</a> are
-found
-</p>
-        </div>
-      </div>
-
-      <div id="method-M000069" class="method-detail">
-        <a name="M000069"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000069.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000069.html');return false;">
-          <span class="method-name">resolve_overlaps</span><span class="method-args">(mode=nil)</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-TODO HACK alarm ! + sanitize + shorten, check effciency ACON: preference
-pfamA, maximize evalue ACOV: preference pfamA, maximize <a
-href="Protein.html#M000078">coverage</a> BCON: preference pfamB, maximize
-evalue BCOV: preference pfamB, maximize <a
-href="Protein.html#M000078">coverage</a>
-</p>
-        </div>
-      </div>
-
-      <div id="method-M000066" class="method-detail">
-        <a name="M000066"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000066.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000066.html');return false;">
-          <span class="method-name">resolve_overlaps_with_sets</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-Create all non-overlapping domain sets and find the set that maximized <a
-href="Protein.html#M000078">coverage</a>
-</p>
-        </div>
-      </div>
-
-      <div id="method-M000075" class="method-detail">
-        <a name="M000075"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000075.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000075.html');return false;">
-          <span class="method-name">rewind</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-        </div>
-      </div>
-
-      <div id="method-M000083" class="method-detail">
-        <a name="M000083"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000083.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000083.html');return false;">
-          <span class="method-name">sequence=</span><span class="method-args">(seq)</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-        </div>
-      </div>
-
-      <div id="method-M000068" class="method-detail">
-        <a name="M000068"></a>
-
-        <div class="method-heading">
-          <a href="Protein.src/M000068.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000068.html');return false;">
-          <span class="method-name">simple_overlap_resolution</span><span class="method-args">()</span>
+          <span class="method-name">has_overlapping_domains?</span><span class="method-args">()</span>
           </a>
         </div>
       
@@ -701,12 +518,245 @@ end
         </div>
       </div>
 
-      <div id="method-M000073" class="method-detail">
-        <a name="M000073"></a>
+      <div id="method-M000071" class="method-detail">
+        <a name="M000071"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000073.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000073.html');return false;">
+          <a href="Protein.src/M000071.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000071.html');return false;">
+          <span class="method-name">has_overlaps?</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000056" class="method-detail">
+        <a name="M000056"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000056.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000056.html');return false;">
+          <span class="method-name">is_multidomain?</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000089" class="method-detail">
+        <a name="M000089"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000089.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000089.html');return false;">
+          <span class="method-name">jaccard_dist</span><span class="method-args">(protein, collapse=true)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000069" class="method-detail">
+        <a name="M000069"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000069.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000069.html');return false;">
+          <span class="method-name">member?</span><span class="method-args">(did)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000059" class="method-detail">
+        <a name="M000059"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000059.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000059.html');return false;">
+          <span class="method-name">names=</span><span class="method-args">(var)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000083" class="method-detail">
+        <a name="M000083"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000083.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000083.html');return false;">
+          <span class="method-name">next_dom</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000065" class="method-detail">
+        <a name="M000065"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000065.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000065.html');return false;">
+          <span class="method-name">pfam_A</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Wrapper for <a href="Protein.html#M000067">type_filter</a>. Returns an
+array of <a href="Domain.html">Domain</a> objects of type PfamA, or an
+empty array if no PfamA <a href="Protein.html#M000060">domains</a> are
+found
+</p>
+        </div>
+      </div>
+
+      <div id="method-M000066" class="method-detail">
+        <a name="M000066"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000066.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000066.html');return false;">
+          <span class="method-name">pfam_B</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Wrapper for <a href="Protein.html#M000067">type_filter</a>. Returns an
+array of <a href="Domain.html">Domain</a> objects of type PfamB, or an
+empty array if no PfamB <a href="Protein.html#M000060">domains</a> are
+found
+</p>
+        </div>
+      </div>
+
+      <div id="method-M000075" class="method-detail">
+        <a name="M000075"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000075.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000075.html');return false;">
+          <span class="method-name">prot_dom_coverage</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000076" class="method-detail">
+        <a name="M000076"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000076.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000076.html');return false;">
+          <span class="method-name">remove_overlaps_lw</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000078" class="method-detail">
+        <a name="M000078"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000078.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000078.html');return false;">
+          <span class="method-name">resolve_overlaps</span><span class="method-args">(mode=nil)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+TODO HACK alarm ! + sanitize + shorten, check effciency ACON: preference
+pfamA, maximize evalue ACOV: preference pfamA, maximize <a
+href="Protein.html#M000087">coverage</a> BCON: preference pfamB, maximize
+evalue BCOV: preference pfamB, maximize <a
+href="Protein.html#M000087">coverage</a>
+</p>
+        </div>
+      </div>
+
+      <div id="method-M000072" class="method-detail">
+        <a name="M000072"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000072.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000072.html');return false;">
+          <span class="method-name">resolve_overlaps_with_sets</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Create all non-overlapping domain sets and find the set that maximized <a
+href="Protein.html#M000087">coverage</a>
+</p>
+        </div>
+      </div>
+
+      <div id="method-M000084" class="method-detail">
+        <a name="M000084"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000084.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000084.html');return false;">
+          <span class="method-name">rewind</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000092" class="method-detail">
+        <a name="M000092"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000092.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000092.html');return false;">
+          <span class="method-name">sequence=</span><span class="method-args">(seq)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000077" class="method-detail">
+        <a name="M000077"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000077.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000077.html');return false;">
+          <span class="method-name">simple_overlap_resolution</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+        </div>
+      </div>
+
+      <div id="method-M000082" class="method-detail">
+        <a name="M000082"></a>
+
+        <div class="method-heading">
+          <a href="Protein.src/M000082.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000082.html');return false;">
           <span class="method-name">to_arr_s</span><span class="method-args">(sep = ';')</span>
           </a>
         </div>
@@ -718,12 +768,12 @@ TODO: check if required (why not attr_reader?)
         </div>
       </div>
 
-      <div id="method-M000072" class="method-detail">
-        <a name="M000072"></a>
+      <div id="method-M000081" class="method-detail">
+        <a name="M000081"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000072.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000072.html');return false;">
+          <a href="Protein.src/M000081.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000081.html');return false;">
           <span class="method-name">to_s</span><span class="method-args">()</span>
           </a>
         </div>
@@ -732,12 +782,12 @@ TODO: check if required (why not attr_reader?)
         </div>
       </div>
 
-      <div id="method-M000057" class="method-detail">
-        <a name="M000057"></a>
+      <div id="method-M000063" class="method-detail">
+        <a name="M000063"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000057.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000057.html');return false;">
+          <a href="Protein.src/M000063.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000063.html');return false;">
           <span class="method-name">total_domains</span><span class="method-args">()</span>
           </a>
         </div>
@@ -746,12 +796,12 @@ TODO: check if required (why not attr_reader?)
         </div>
       </div>
 
-      <div id="method-M000061" class="method-detail">
-        <a name="M000061"></a>
+      <div id="method-M000067" class="method-detail">
+        <a name="M000067"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000061.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000061.html');return false;">
+          <a href="Protein.src/M000067.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000067.html');return false;">
           <span class="method-name">type_filter</span><span class="method-args">(type)</span>
           </a>
         </div>
@@ -765,12 +815,12 @@ in <em>self</em>, then self.domains will return an empty array
         </div>
       </div>
 
-      <div id="method-M000062" class="method-detail">
-        <a name="M000062"></a>
+      <div id="method-M000068" class="method-detail">
+        <a name="M000068"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000062.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000062.html');return false;">
+          <a href="Protein.src/M000068.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000068.html');return false;">
           <span class="method-name">type_filter!</span><span class="method-args">(type)</span>
           </a>
         </div>
@@ -782,12 +832,12 @@ In place variant of self.type_filter
         </div>
       </div>
 
-      <div id="method-M000058" class="method-detail">
-        <a name="M000058"></a>
+      <div id="method-M000064" class="method-detail">
+        <a name="M000064"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000058.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000058.html');return false;">
+          <a href="Protein.src/M000064.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000064.html');return false;">
           <span class="method-name">uniq_doms</span><span class="method-args">()</span>
           </a>
         </div>
@@ -798,12 +848,12 @@ In place variant of self.type_filter
 
       <h3 class="section-bar">Protected Instance methods</h3>
 
-      <div id="method-M000084" class="method-detail">
-        <a name="M000084"></a>
+      <div id="method-M000093" class="method-detail">
+        <a name="M000093"></a>
 
         <div class="method-heading">
-          <a href="Protein.src/M000084.html" target="Code" class="method-signature"
-            onclick="popupCode('Protein.src/M000084.html');return false;">
+          <a href="Protein.src/M000093.html" target="Code" class="method-signature"
+            onclick="popupCode('Protein.src/M000093.html');return false;">
           <span class="method-name">update_arrstr</span><span class="method-args">()</span>
           </a>
         </div>
