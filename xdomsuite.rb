@@ -31,7 +31,6 @@
 #===Credits
 # Andrew D. Moore (radmoore@uni-muenster.de)
 # Lothar Wissler (l.wissler@uni-muenster.de)
-# Fabian Zimmer (f.zimmer@uni-muenster.de)
 # 
 #===Version
 # rv 2.4a
