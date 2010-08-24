@@ -840,7 +840,7 @@ private
           end
           from = (envelope) ? env_st.to_i : aln_st.to_i
           to = (envelope) ? env_en.to_i : aln_en.to_i         
-          d = Domain.new(from, to, hmm_na, eva_ht.to_f, bit_sc.to_f, p.pid, cla_id, "", hmm_ac)
+          d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, "", hmm_ac)
           p.add_domain(d)
           @total_dom_residues += (to - from)
           did = (@names) ? hmm_na : hmm_ac
@@ -1137,9 +1137,30 @@ class Protein
     return false
   end
 
-  # Current default for overlap resolution.
-  # TODO:
-  # * check for completness
+
+ def remove_overlaps_lw
+    while self.has_overlapping_domains?
+      # 1. identify region where domain coverage > 1
+      start = 0
+      stop = self.length
+      covHash = self.prot_dom_coverage
+      0.upto(self.length).each{|i| if covHash[i] > 1; start = i; break; end }
+      start.upto(self.length).each{|i| if covHash[i] < 2; stop = i-1; break; end }
+      # 2. identify all domains that overlap with this region
+      overlappingDomains = self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}
+      # 3. find most significant domain in this set
+      overlappingDomains.sort!{|d1,d2| d1.evalue <=> d2.evalue}
+      best = overlappingDomains.first
+      # 4. remove all domains in the set that overlap with the best domain
+      start, stop = best.from, best.to
+      self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}.each do |d|
+        next if d == best
+        self.domains.delete(d)
+      end
+    end
+    return self
+  end
+
   def simple_overlap_resolution
     pos = 0
     pdom = cdom = nil
