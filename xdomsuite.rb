@@ -29,8 +29,10 @@
 # * if protein length unknown, take stop pos of last domain as length
 #
 #===Credits
-#Andrew D. Moore (radmoore@uni-muenster.de)
-#
+# Andrew D. Moore (radmoore@uni-muenster.de)
+# Lothar Wissler (l.wissler@uni-muenster.de)
+# Fabian Zimmer (f.zimmer@uni-muenster.de)
+# 
 #===Version
 # rv 2.4a
 
@@ -170,7 +172,7 @@ class Parser
 
 end
 
-#=== XDOM
+#=== Proteome
 #Class for creating a proteome-like object from a xdom file. Provides methods for iteration and filtering, sequence association
 #collapsing repeats, retreiving statistics etc 
 #
@@ -178,11 +180,11 @@ end
 # 
 # require 'xdomsuite'
 #
-# xdom = XDOM.new(ARGV[0], 0.001)
+# xdom = Proteome.new(ARGV[0], 0.001)
 # puts xdom.res_coverage
 # puts xdom.prot_coverage
 # 
-# while(xdom.has_next)
+# while(xdom.has_next?)
 #  p = xdom.next_prot
 #  next unless p.has_domains?
 #  p.domains.each {|d| puts d.did}
@@ -191,8 +193,8 @@ end
 #
 #====Open Issues /  TODOs
 # 
-# * Currently only supports custom pfamscan output 
 # * Check file type validity
+# * Many more...
 class Proteome
 
   HEADERre = /^>(\S+)\s+(\d+)$/
@@ -435,7 +437,7 @@ class Proteome
   end
 
   # TODO: this does not work - seems to modify self (no deep copy?)!!!
-  # Returns a new xdom where all domain that are not of type _type_ are removed
+  # Returns a new proteome where all domains that are not of type _type_ are removed
   # See Protein.type_filter
 	def filter_by_type(type)
     newxdom = self.dup
@@ -641,6 +643,50 @@ class Proteome
     return uniq.values
   end
 
+  # Returns a list of all proteins, or maximum +limit+, 
+  # that share a distance to each other of no more than
+  # dis. Currently only edit_distance support.
+  def collect_by_similarity(thres, limit=100, method='edit')
+    raise "Invalid method #{method}. Currently only 'edit' is supported" unless (method == 'edit')
+    results = Array.new
+    i = 0
+    @proteins.values.each do |p1|
+      @proteins.values.each do |p2|
+        break if i >= limit
+        next if p1.pid == p2.pid
+        if (p1.edit_distance(p2) <= thres)
+          next if (p1.edit_distance(p2) == -1)
+          results.push(p1, p2)
+          i += 1
+        end
+      end
+    end
+    return results || nil
+  end
+
+  # Returns a list of proteins (up to limit) that have a distance
+  # no larger than thres to a query protein. Currently only
+  # edit distance supported.
+  # TODO:
+  # * does not work
+  # * very slow
+  def find_by_similarity(query_prot, thres=2, limit=100, method='edit')
+    raise "Invalid method #{method}. Currently only 'edit' is supported" unless (method == 'edit')
+    results = Array.new
+    i = 0
+    @proteins.values.each do |p|
+      puts query_prot
+      break if i >= limit
+      next if p.pid == query_prot.pid
+      next if query_prot.edit_distance(p) == -1
+      puts p
+      results << p if (query_prot.edit_distance(p) <= thres)
+      limit += 1
+    end
+    return results
+  end
+
+
   # Returns the procentage of amino acid residues that fall into an annotated region (domain). 
   # If _num_ is _true_ , a float is returned. Otherwise a formatted string is returned.
   #
@@ -689,20 +735,13 @@ class Proteome
 	# TODO: check
 	# ADM comment: I am not sure the call to update_domains()
 	# is still necessary, as total_domains is set
-	# after iteration below (update:_domains() may
-	# however be up to something else that I cant see right now
+	# after iteration below (update_domains() may
+	# however be up to something else that I cant see right now)
     update_domains()
-	update_arrangements()
+	  update_arrangements()
     @total_domains = total_domains
     return nil
   end
-
-  def resolve_overlaps_with_sets
-    @proteins.values.each {|p| p.resolve_overlaps_with_sets}
-    update_arrangements()
-    return nil
-  end
-
 
   # TODO
   def annotate_with_context(xdom)
@@ -1020,6 +1059,10 @@ class Protein
     return @domains
   end
 
+	def domain_ids
+		@domains.collect{|d| d.did}
+	end
+
   # get a random domain
   def grab
     return nil if @domains.empty?
@@ -1076,6 +1119,10 @@ class Protein
 		return @collapsed
 	end
 
+  # TODO:
+  # * check if this actually works
+  # (is not used anymore, but could be
+  # useful)
   def has_overlaps?
     cdom = pdom = nil
     pos = 0
@@ -1092,140 +1139,9 @@ class Protein
     return false
   end
 
-  # Create all non-overlapping domain sets and find 
-  # the set that maximized coverage
-  def resolve_overlaps_with_sets
-    return self if self.total_domains < 2 # overlaps impossible
-  #  puts self.pid
-    v = true if (self.pid == 'BGIBMGA005287-PA')
-    non_overlapping = Array.new
-    pos = 0
-    until (pos == self.total_domains) 
-      non_overlapping << [self.domains[pos]]
-      non_overlapping << find_domainsets(self.domains[pos], pos)
-      pos += 1
-    end
-
-   # if (self.pid == 'BGIBMGA005287-PA')
-   #   c = 0
-   #   non_overlapping.each do |pos|
-   #     puts "SET: #{c}"
-   #     non_overlapping[c].each do |d|
-   #       puts "\t"+d.to_s
-   #     end
-   #     puts
-   #     c += 1
-   #   end
-   # end
-   # exit
-
-
-    # determine best set
-    maxpos = coverage = pos = 0
-    until (pos == non_overlapping.size)
-      c = 0
-      domarray = non_overlapping[pos]
- #     puts domarray.inspect if v
-      domarray.each {|d| c += d.length}
-      if (c > coverage)
-        coverage = c
-        maxpos = pos
-      end
-      pos += 1
-    end
-    if (self.pid == 'BGIBMGA005287-PA')
-      c = 0
-      non_overlapping.each do |pos|
-        puts "SET: #{c}"
-        non_overlapping[c].each do |d|
-          puts "\t"+d.to_s
-        end
-        puts
-        c += 1
-      end
-    end
-    @domains = non_overlapping[maxpos]
-    self.update_arrstr
-    return self
-  end
-
-  # find non-overlapping domain sets
-  def find_domainsets(cdom, pos)
-    v = true if (self.pid == 'BGIBMGA005287-PA')
-    puts "POS: #{pos}, cdom: #{cdom}" if v
-    cpos = 0
-    noover = Array.new
-    noover << cdom
-    until (cpos == self.total_domains)
-      if cpos == pos  
-        cpos += 1
-        next
-      end
-      dom = self.domains[cpos]
-      #if (cdom.overlaps?(dom))
-      if (cpos < pos)
-        if (cdom.to >= dom.from)
-          puts "#{cdom.did} [#{cdom.to}] overlaps with #{dom.did} [#{dom.from}]" if v
-        else
-          noover << dom
-        end
-      else
-        if (cdom.from >= dom.to)
-          puts "#{cdom.did} [#{cdom.to}] overlaps with #{dom.did} [#{dom.from}]" if v
-        else
-          noover << dom
-        end
-      end
-      cpos += 1
-    end
-    return (noover.empty?) ? nil : noover
-  end
-
-#  def overlaps?(domain)
-#    raise "overlap? requires formal paramter of type <DOMAIN>" unless (domain.instance_of?(Domain))
-#    return true if (self.to >= domain.from)
-#    return false
-#  end  
-
-  def has_overlapping_domains?
-    return false if self.domains.count < 2
-    posHash = self.prot_dom_coverage
-    return false if posHash.values.reject{|e| e == 0 or e == 1}.count == 0
-    return true
-  end
-
-  def prot_dom_coverage
-    posHash = Hash.new(0)
-    self.domains.each do |domain|
-      domain.from.upto(domain.to).each{|i| posHash[i] += 1}
-    end
-    return posHash
-  end
-
-  def remove_overlaps_lw
-    while self.has_overlapping_domains?
-      # 1. identify region where domain coverage > 1
-      start = 0
-      stop = self.length
-      covHash = self.prot_dom_coverage
-      0.upto(self.length).each{|i| if covHash[i] > 1; start = i; break; end }
-      start.upto(self.length).each{|i| if covHash[i] < 2; stop = i-1; break; end }
-      # 2. identify all domains that overlap with this region
-      overlappingDomains = self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}
-      # 3. find most significant domain in this set
-      overlappingDomains.sort!{|d1,d2| d1.evalue <=> d2.evalue}
-      best = overlappingDomains.first
-      # 4. remove all domains in the set that overlap with the best domain
-      start, stop = best.from, best.to
-      self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}.each do |d|
-        next if d == best
-        self.domains.delete(d)
-      end
-    end
-    return self
-  end
-
-
+  # Current default for overlap resolution.
+  # TODO:
+  # * check for completness
   def simple_overlap_resolution
     pos = 0
     pdom = cdom = nil
@@ -1274,15 +1190,22 @@ class Protein
     return self
   end
 
+  # Allows control over overlap resolution
+  # by setting type preference (currently only
+  # A or B) and evalue or coverage maximization.
+  #
   # TODO
-  # HACK alarm !
+  # * double check
+  # + incorp. switch for simple overlap res?
   # + sanitize
   # + shorten, check effciency
   # ACON: preference pfamA, maximize evalue
   # ACOV: preference pfamA, maximize coverage
   # BCON: preference pfamB, maximize evalue
   # BCOV: preference pfamB, maximize coverage
-  def resolve_overlaps(mode=nil)
+  def resolve_overlaps(simple = true, mode=nil)
+    return simple_overlap_resolution() if simple
+
     raise "Please select overlap resolution mode: AE=0, AC=1, BE=2, BC=3" if (mode.nil?)
     raise "Invalid resolution mode: AE=0, AC=1, BE=2, BC=3" unless ((0 <= mode) && (mode <= 3))
 
@@ -1492,27 +1415,6 @@ class Protein
     return (res) ? domres : round( ((domres.to_f/self.length.to_f)*100).to_f )
   end
 
-
-  # TODO
-  def edit_distance (protein, collapse=false)
-    arr1 = self.arrstr.split(';').sort
-    arr2 = protein.arrstr.split(';').sort
-    if (collapse)
-      arr1.uniq!
-      arr2.uniq!
-    end
-    operations = (arr1.length > arr2.length) ? (arr1.length-arr2.length) : (arr2.length-arr1.length)
-    # if add operations are sufficient to reach arrangement 2,
-    # than what arr1 and arr2 have in common makes up for the
-    # difference between both arrangements
-    return operations if ((arr1 & arr2).length == operations)
-    for i in 0..(arr1.length) do
-      break if (i > arr2.length)
-      operations += 2 unless (arr1[i] == arr2[i])
-    end
-    return operations
-  end
-
   def jaccard_dist(protein, collapse=true)
     arrangement1 = self.domains.collect {|d| d.did}
     arrangement2 = protein.domains.collect {|d| d.did}
@@ -1527,6 +1429,82 @@ class Protein
     jaccard_coef = (intersect.size.to_f/union.size.to_f)
     return round(1-jaccard_coef)
   end
+
+  # Return the domain edit distance of two proteins. The edit distance
+  # is calculated by conducting a NW-like alignment of the domain IDs, and counting
+  # the number of non-aligned domains. The returned integer can be interpreted
+  # as the number of edit operations necessary to go from one arrangement
+  # to another.
+  # 
+  # This is loosely based on the domain distance
+  # (Bjoerklund et al, 2005), albeit without affine gap penalties
+  # and with mismatch penalties.
+  #
+  # Returns 0 if arrangements are identical, -1 if no domains are shared
+  # otherwise a value > 0 that indicates the number of operations.
+  #
+  # TODO:
+  # * Double check
+  # * Affine gap penalties?
+  def edit_distance(protein, gap = -0.01, match = 1, mmatch = -1)
+
+    return 0 if (protein.arrstr == self.arrstr)
+
+    p1 = self.domains
+    p2 = protein.domains
+    rows = p1.length + 1
+    cols = p2.length + 1
+
+    # Initiate alignment lattice
+    lattice = Array.new(rows) {|i| Array.new(cols, 0)}
+
+    # Calculate alignment lattice
+    1.upto(p1.length) do |i|
+      1.upto(p2.length) do |j|
+        lattice[i][j] = [
+          lattice[i-1][j-1] + ((p1[i-1].did == p2[j-1].did) ? match : mmatch),
+          lattice[i-1][j] + gap,
+          lattice[i][j-1] + gap
+        ].max
+      end
+    end
+
+    i = p1.length
+    j = p2.length
+    edit_distance = 0
+
+    # Traceback
+    while (i > 0 && j > 0)
+      s_current = lattice[i][j]
+      s_diag = lattice[i-1][j-1]
+      s_up   = lattice[i][j-1]
+      s_neig = lattice[i-1][j]
+      if (s_current == s_diag + ((p1[i-1].did == p2[j-1].did) ? match : mmatch))
+        i -= 1
+        j -= 1
+      elsif (s_current == s_neig + gap)
+        i -= 1
+        edit_distance += 1
+      elsif (s_current == s_up + gap)
+        j -= 1
+        edit_distance += 1
+      end
+    end
+
+    while (i > 0)
+      edit_distance += 1
+      i -= 1
+    end
+
+    while (j > 0)
+      edit_distance += 1
+      j -= 1
+    end
+
+    return (p1.length + p2.length >= edit_distance) ?  -1 : edit_distance
+
+  end
+
 
   def get_interdoms(min=20)
     return nil if (self.total_domains == 0)
