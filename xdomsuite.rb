@@ -706,13 +706,10 @@ class Proteome
     return num ? cov : sprintf('%2f', cov)
   end
 
-  def resolve_overlaps(mode)
-    @proteins.values.each {|p| p.resolve_overlaps(mode)}
-		update_arrangements()
-    return nil
-  end
-  
-  def remove_overlaps_lw
+  # TODO:
+  # Allow 'modes' of overlap resolution
+  # eg max. coverage, max. evalue, type dependant
+  def resolve_overlaps
     total_domains = 0
     @proteins.values.each {|p| 
       p.remove_overlaps_lw
@@ -724,17 +721,16 @@ class Proteome
     return nil
   end
 
+  # with the new method by lo, this
+  # is now depricated and will be
+  # removed in subsequent commits
   def simple_overlap_resolution
+    STDERR.puts "*** Method #{simple_overlap_resolution} is depricated. Use resolve_overlaps instead"
     total_domains = 0
     @proteins.values.each {|p| 
       p.simple_overlap_resolution
       total_domains += p.domains.length
     }
-	# TODO: check
-	# ADM comment: I am not sure the call to update_domains()
-	# is still necessary, as total_domains is set
-	# after iteration below (update_domains() may
-	# however be up to something else that I cant see right now)
     update_domains()
 	  update_arrangements()
     @total_domains = total_domains
@@ -1138,7 +1134,7 @@ class Protein
   end
 
 
- def remove_overlaps_lw
+ def resolve_overlaps
     while self.has_overlapping_domains?
       # 1. identify region where domain coverage > 1
       start = 0
@@ -1161,7 +1157,11 @@ class Protein
     return self
   end
 
+
+  # This method is depricated and will 
+  # be removed in a future commit
   def simple_overlap_resolution
+    STDERR.puts "*** Method #{simple_overlap_resolution} is to be removed. Use #{resolve_overlaps} instead"
     pos = 0
     pdom = cdom = nil
     deleted = Array.new
@@ -1222,7 +1222,7 @@ class Protein
   # ACOV: preference pfamA, maximize coverage
   # BCON: preference pfamB, maximize evalue
   # BCOV: preference pfamB, maximize coverage
-  def resolve_overlaps(simple = true, mode=nil)
+  def resolve_overlaps_old(simple = true, mode=nil)
     return simple_overlap_resolution() if simple
 
     raise "Please select overlap resolution mode: AE=0, AC=1, BE=2, BC=3" if (mode.nil?)
@@ -1584,8 +1584,6 @@ class Protein
   end
 
   private
-
-  #### PUT SET FINDER HERE####
 
   # do not remove duplicates
   def true_intersection (arr1, arr2)
