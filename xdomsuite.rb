@@ -836,7 +836,7 @@ private
           end
           from = (envelope) ? env_st.to_i : aln_st.to_i
           to = (envelope) ? env_en.to_i : aln_en.to_i         
-          d = Domain.new(from, to, hmm_na, eva_ht.to_f, bit_sc.to_f, p.pid, cla_id, nil, "", hmm_ac)
+          d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f, "", hmm_ac)
           p.add_domain(d)
           @total_dom_residues += (to - from)
           did = (@names) ? hmm_na : hmm_ac
@@ -885,7 +885,7 @@ private
       p = Protein.new(seq_id, seq_le.to_i, "", @species, "", @filename) if p.nil?
       from = (envelope) ? env_st.to_i : aln_st.to_i
       to = (envelope) ? env_en.to_i : aln_en.to_i         
-      d = Domain.new(from, to, hmm_na, eva_ht.to_f, bit_sc.to_f, p.pid, cla_id, nil, "", hmm_ac)
+      d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f, "", hmm_ac)
       p.add_domain(d)
       @total_dom_residues += (to - from)
       did = (@names) ? hmm_na : hmm_ac
@@ -920,7 +920,7 @@ private
         end
         (from, to, did, evalue) = line.split
         clan = nil
-        domain = Domain.new(from.to_i, to.to_i, did, evalue.to_f, protein.pid, clan, nil)
+        domain = Domain.new(from.to_i, to.to_i, did, evalue.to_f, protein.pid, clan)
         @total_dom_residues += (to.to_i-from.to_i)
         @domains[did] = Array.new unless (@domains.member?(did))
         @total_domains += 1 if (@domains[did].push(protein.pid))
@@ -1024,6 +1024,21 @@ class Protein
   
   def is_multidomain?
     return @domains.size > 1
+  end
+
+  def has_overlapping_domains?
+    return false if self.domains.count < 2
+    posHash = self.prot_dom_coverage
+    return false if posHash.values.reject{|e| e == 0 or e == 1}.count == 0 
+    return true 
+  end  
+
+  def prot_dom_coverage
+    posHash = Hash.new(0)
+    self.domains.each do |domain|
+      domain.from.upto(domain.to).each{|i| posHash[i] += 1}
+    end
+    return posHash
   end
 
   def add_domain (domain)
@@ -1341,7 +1356,7 @@ class Protein
       did = (@names) ? d.did : d.acc
       did = (@clans && (not d.cid.nil?)) ? d.cid : did
       doms += "#{d.from.to_s}\t#{d.to.to_s}\t#{did}\t#{d.evalue.to_s}"
-      doms += (d.comment.empty?) ? "\n" : "\t;#{d.comment}\n"
+      doms += (d.comment.nil? or d.comment.empty?) ? "\n" : "\t;#{d.comment}\n"
     end
     head+doms
   end
