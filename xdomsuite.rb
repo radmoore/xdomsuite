@@ -1327,6 +1327,8 @@ class Protein
     return a
   end
 
+  # TODO:
+  # there are some problems with d.comment being nil
   def to_s
     head = (@length != 0) ? ">"+@pid+"\t"+@length.to_s+"\n" : ">"+@pid+"\t"+"\t"+"\n"
     doms = String.new
