@@ -23,7 +23,7 @@ def rsd(values)
   values = string_array2int_array(values)
   aver = mean(values)
   stdv = stdv(values)
-  (stdv*100)/aver
+  return aver == 0 ? nil : stdv/aver
 end
 
 # Relative Standard deviation
