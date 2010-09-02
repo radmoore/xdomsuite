@@ -712,7 +712,7 @@ class Proteome
   def resolve_overlaps
     total_domains = 0
     @proteins.values.each {|p| 
-      p.remove_overlaps_lw
+      p.resolve_overlaps
       total_domains += p.domains.length
     }
     update_domains()
