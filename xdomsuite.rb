@@ -36,6 +36,9 @@
 # rv 2.4a
 
 require 'ftools'
+require 'benchmark'
+require 'digest/md5'
+
 
 # Add to hash method to array
 class Array
@@ -103,10 +106,12 @@ class Parser
   # * Clan
   # * Predicted_active_site_residues
   def pfamscan(evalue=10, name=true, length=true)
-    hmmout = File.open(@filename, "r")
     p = nil
+    Benchmark.bmbm do |b|
+    b.report("with update") {
+    hmmout = File.open(@filename, "r")
     while(line = hmmout.gets)
-      next if (/^#{@comment}/.match(line) || /^$/.match(line))
+      next if line.length == 1 or line[0,@comment.length] == @comment
       line.chomp!
       (seq_le, # sequence length, custom field
 			 seq_id, # seq  id
@@ -128,13 +133,48 @@ class Parser
 
       next if (eva_ht.to_f >= evalue)
       did = (name) ? hmm_na : hmm_ac
-      did = did.split('.')[0] if (/.+\.\d+/.match(did))
+      did = did.split('.')[0] if did.count(".") > 0 # (/.+\.\d+/.match(did))
       @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
       p = @proteins[seq_id]
       d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f)
       p.add_domain(d)
     end
     hmmout.close
+    }
+    b.report("without update") {
+    hmmout = File.open(@filename, "r")
+    while(line = hmmout.gets)
+      next if line.length == 1 or line[0,@comment.length] == @comment
+      line.chomp!
+      (seq_le, # sequence length, custom field
+			 seq_id, # seq  id
+       aln_st, # alignment start
+       aln_en, # alignment end
+       env_st, # envelope start
+       env_en, # envelope end
+       hmm_ac, # hmm acc
+       hmm_na, # hmm name
+       dom_ty, # type
+       hmm_st, # hmm start
+       hmm_en, # hmm end
+       hmm_ln, # hmm length
+       bit_sc, # bit score
+       eva_ht, # e-value
+       sig_ht, # significance
+       cla_id, # clan
+       pre_as) = line.split  # predicted_active_site_residues
+
+      next if (eva_ht.to_f >= evalue)
+      did = (name) ? hmm_na : hmm_ac
+      did = did.split('.')[0] if did.count(".") > 0 # (/.+\.\d+/.match(did))
+      @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
+      p = @proteins[seq_id]
+      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f)
+      p.add_domain(d, false)
+    end
+    hmmout.close
+    }
+    end
     return @proteins.values
   end
 
@@ -789,74 +829,28 @@ private
   def read_pfamscan(evalue=10, envelope=false)
     hmmout = File.open(@filename, "r")
     cpid = pid = nil
-    entries = Array.new
+    entries = Hash.new
     while(line = hmmout.gets)
-      next if (/^#{@comment}/.match(line) || /^$/.match(line))
+      next if line.length == 1 or line[0,@comment.length] == @comment
       line.chomp!
       cpid = line.split[1]
       eva_ht = line.split[13]
       next if (eva_ht.to_f > evalue.to_f)
-      if (pid.nil?)
-        entries << line
-        pid = cpid
-        next
+      if (cpid != pid and not pid.nil?)
+        process_pfamscan_entries(entries, envelope) unless entries.empty?
+        entries = Hash.new
       end
-      if (cpid != pid)
-        if entries.empty?
-          entries = Array.new
-          entries << line
-          pid = cpid
-          next
-        end
-        p = nil
-        entries.each do |domline|
-          (seq_le, # sequence length, custom field
-           seq_id, # seq  id
-           aln_st, # alignment start
-           aln_en, # alignment end
-           env_st, # envelope start
-           env_en, # envelope end
-           hmm_ac, # hmm acc
-           hmm_na, # hmm name
-           dom_ty, # type
-           hmm_st, # hmm start
-           hmm_en, # hmm end
-           hmm_ln, # hmm length
-           bit_sc, # bit score
-           eva_ht, # e-value
-           sig_ht, # significance
-           cla_id, # clan
-           pre_as) = domline.split  # predicted_active_site_residues
-          hmm_ac = hmm_ac.split('.')[0] if (/.+\.\d+/.match(hmm_ac))
-          cla_id = nil if (cla_id == 'NA' || cla_id == 'No_clan')
-          if p.nil?
-            p = Protein.new(seq_id, seq_le.to_i, "", @species, "", @filename)
-            p.clans = @clans
-            p.names = @names
-          end
-          from = (envelope) ? env_st.to_i : aln_st.to_i
-          to = (envelope) ? env_en.to_i : aln_en.to_i         
-          d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f, "", hmm_ac)
-          p.add_domain(d)
-          @total_dom_residues += (to - from)
-          did = (@names) ? hmm_na : hmm_ac
-          @domains[did] = Array.new unless (@domains.member?(did))
-          @total_domains += 1 if (@domains[did] << p.pid)
-        end
-        @arrangements[p.arrstr] = Array.new unless (@arrangements.has_key?(p.arrstr))
-        @arrangements[p.arrstr] << p.pid
-        @total_prot_length += p.length
-        @proteins[p.pid] = p
-        entries = Array.new
-        entries << line
-        pid = cpid
-        next
-      end
-      entries << line
+      entries[Digest::MD5.hexdigest(line)] = line
       pid = cpid
     end
+    process_pfamscan_entries(entries, envelope) unless entries.empty?
+    hmmout.close
+  end
+
+
+  def process_pfamscan_entries(entries, envelope)
     p = nil
-    entries.each do |domline|
+    entries.each do |md5, domline|
       (seq_le, # sequence length, custom field
        seq_id, # seq  id
        aln_st, # alignment start
@@ -874,15 +868,13 @@ private
        sig_ht, # significance
        cla_id, # clan
        pre_as) = domline.split  # predicted_active_site_residues
-      hmm_ac = hmm_ac.split('.')[0] if (/.+\.\d+/.match(hmm_ac))
+      hmm_ac = hmm_ac.split('.')[0] if hmm_ac.count(".") > 0 # (/.+\.\d+/.match(hmm_ac))
       cla_id = nil if (cla_id == 'NA' || cla_id == 'No_clan')
       if p.nil?
         p = Protein.new(seq_id, seq_le.to_i, "", @species, "", @filename)
         p.clans = @clans
         p.names = @names
       end
-
-      p = Protein.new(seq_id, seq_le.to_i, "", @species, "", @filename) if p.nil?
       from = (envelope) ? env_st.to_i : aln_st.to_i
       to = (envelope) ? env_en.to_i : aln_en.to_i         
       d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f, "", hmm_ac)
@@ -892,15 +884,12 @@ private
       @domains[did] = Array.new unless (@domains.member?(did))
       @total_domains += 1 if (@domains[did] << p.pid)
     end
-
     @arrangements[p.arrstr] = Array.new unless (@arrangements.has_key?(p.arrstr))
     @arrangements[p.arrstr] << p.pid
     @total_prot_length += p.length
     @proteins[p.pid] = p
-
-    hmmout.close
-
   end
+
 
   def read_xdom (xdomfile)
     f = File.open(xdomfile, "r")
@@ -1041,9 +1030,9 @@ class Protein
     return posHash
   end
 
-  def add_domain (domain)
+  def add_domain (domain, update=true)
     @domains.push(domain)
-    self.update_arrstr()
+    self.update_arrstr() if update
   end
 
   def clans=(var)
