@@ -311,6 +311,13 @@ class Proteome
     return doms.select{|dom| dom if dom.did == did}
   end
 
+  def get_orthomcl_clusters_by_did(did)
+    return nil unless @domains[did]
+    cids = Array.new
+    @domains[did].each{|pid| cids += @proteins[pid].orthomcl_clusters}
+    return cids
+  end
+
   # return a list of all domain ids that occur at least once in each proteome
   def intersection_of_domains(other_proteome)
     return @domains.keys & other_proteome.domains_hash.keys
@@ -576,6 +583,31 @@ class Proteome
       @proteins[pid].goterms[goid] = 1 unless @proteins[pid].goterms.include?(goid)
     end
     update_domains2go()
+  end
+
+  # Provides an interface to attach an orthomcl result file which allows to map
+  # proteins to clusters and domains -over proteins- to clusters
+  def attach_orthomcl_clusters(file)
+    f = File.open(file, "r")
+    added = 0
+    while line = f.gets
+      line.chomp!
+      defpart, elements = line.split(":\t ")
+      clusterid = defpart[0,defpart.index("(")]
+      nGenes = defpart[defpart.index("(")+1..defpart.index(" genes")-1]
+      nTaxa = defpart[defpart.index(" genes,")+7..defpart.index(" taxa")-1]
+      #puts "line: #{line}"
+      #puts "elements: #{elements.inspect}"
+      elements.split.each do |str|
+        species = str[str.index("(")+1..str.index(")")-1]
+        next unless species == @species
+        pid = str[0,str.index("(")]
+        next unless @proteins.include?(pid)
+        @proteins[pid].orthomcl_clusters << clusterid
+        added += 1
+      end
+    end
+    return added
   end
 
   def update_domains2go
@@ -1011,8 +1043,9 @@ class Protein
     @pfamb = false
     @chromosomal_locations = Hash.new
     @goterms = Hash.new
+    @orthomcl_clusters = Array.new
   end
-  attr_accessor :length, :species, :comment, :sep, :pfamb, :chromosomal_locations, :goterms
+  attr_accessor :length, :species, :comment, :sep, :pfamb, :chromosomal_locations, :goterms, :orthomcl_clusters
 	attr_reader :deleted, :pid, :arrstr, :clans, :names, :sequence
   
   def is_multidomain?
@@ -1153,8 +1186,8 @@ class Protein
       # 2. identify all domains that overlap with this region
       overlappingDomains = self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}
       # 3. find most significant domain in this set
-      overlappingDomains.sort!{|d1,d2| d1.evalue <=> d2.evalue}
-      best = overlappingDomains.first
+      overlappingDomains.sort!{|d1,d2| d1.bitscore <=> d2.bitscore}
+      best = overlappingDomains.last
       # 4. remove all domains in the set that overlap with the best domain
       start, stop = best.from, best.to
       self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}.each do |d|
