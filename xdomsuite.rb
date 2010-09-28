@@ -1351,7 +1351,7 @@ class Protein
   end
 
   # TODO: check if required (why not attr_reader?)
-  def to_arr_s(sep = ';')
+  def to_arr_s(clans = false, sep = ';')
     ( self.domains.collect { |d|
         did = d.did
         did = d.cid if (clans && (not d.cid.nil?))
