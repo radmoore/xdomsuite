@@ -914,7 +914,6 @@ private
       from = (envelope) ? env_st.to_i : aln_st.to_i
       to = (envelope) ? env_en.to_i : aln_en.to_i         
       d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f, "", hmm_ac)
-      puts "Adding #{d.did}"
       p.add_domain(d)
       @total_dom_residues += (to - from)
       did = (@names) ? hmm_na : hmm_ac
