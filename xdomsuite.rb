@@ -243,10 +243,11 @@ class Proteome
 
   # Returns a new xdom object containing proteins and domains
   #
-  # * +filename+ : path to the xdomfile
-  # * +evalue+   : annotation threshold
-  # * +species+  : name of the proteome (OPTIONAL)
-  def initialize(filename, evalue, species = "")
+  # * +filename+          : path to the xdomfile
+  # * +evalue+            : annotation threshold
+  # * +required_match+    : min. match requirement of sequence to model (eg. 30 = the query must match at least 30% of the model)
+  # * +species+           : name of the proteome (OPTIONAL)
+  def initialize(filename, evalue, required_match=0, species = "")
     @comment = '#'
     @filename = filename
     @file_ext = File.extname(@filename)
@@ -263,7 +264,7 @@ class Proteome
     @clans = false
     @names = true
     if (@file_ext == '.hmmout')
-      read_pfamscan(evalue)
+      read_pfamscan(evalue, required_match)
     elsif (@file_ext == '.xdom')
       read_xdom(@filename)
     else
@@ -858,7 +859,7 @@ private
   # TODO:
   # * !!!!!sanitize
   # * check efficiency !!!
-  def read_pfamscan(evalue=10, envelope=false)
+  def read_pfamscan(evalue=10, required_match=0, envelope=false)
     hmmout = File.open(@filename, "r")
     cpid = pid = nil
     entries = Hash.new
@@ -869,18 +870,18 @@ private
       eva_ht = line.split[13]
       next if (eva_ht.to_f > evalue.to_f)
       if (cpid != pid and not pid.nil?)
-        process_pfamscan_entries(entries, envelope) unless entries.empty?
+        process_pfamscan_entries(entries, envelope, required_match) unless entries.empty?
         entries = Hash.new
       end
       entries[Digest::MD5.hexdigest(line)] = line
       pid = cpid
     end
-    process_pfamscan_entries(entries, envelope) unless entries.empty?
+    process_pfamscan_entries(entries, envelope, required_match) unless entries.empty?
     hmmout.close
   end
 
 
-  def process_pfamscan_entries(entries, envelope)
+  def process_pfamscan_entries(entries, envelope, required_match)
     p = nil
     entries.each do |md5, domline|
       (seq_le, # sequence length, custom field
@@ -892,8 +893,8 @@ private
        hmm_ac, # hmm acc
        hmm_na, # hmm name
        dom_ty, # type
-       hmm_st, # hmm start
-       hmm_en, # hmm end
+       hmm_st, # hmm start (in qsequence)
+       hmm_en, # hmm end (in qsequence)
        hmm_ln, # hmm length
        bit_sc, # bit score
        eva_ht, # e-value
@@ -907,6 +908,7 @@ private
         p.clans = @clans
         p.names = @names
       end
+      next if (((100 / hmm_ln.to_f) * (hmm_en.to_f - hmm_st.to_f)) < required_match)
       from = (envelope) ? env_st.to_i : aln_st.to_i
       to = (envelope) ? env_en.to_i : aln_en.to_i         
       d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f, "", hmm_ac)
