@@ -37,7 +37,7 @@
 
 require 'ftools'
 require 'benchmark'
-require 'digest/md5'
+#require 'digest/md5'
 
 
 # Add to hash method to array
@@ -862,7 +862,7 @@ private
   def read_pfamscan(evalue=10, required_match=0, envelope=false)
     hmmout = File.open(@filename, "r")
     cpid = pid = nil
-    entries = Hash.new
+    entries = Array.new
     while(line = hmmout.gets)
       next if line.length == 1 or line[0,@comment.length] == @comment
       line.chomp!
@@ -871,9 +871,10 @@ private
       next if (eva_ht.to_f > evalue.to_f)
       if (cpid != pid and not pid.nil?)
         process_pfamscan_entries(entries, envelope, required_match) unless entries.empty?
-        entries = Hash.new
+        entries = Array.new
       end
-      entries[Digest::MD5.hexdigest(line)] = line
+    #  entries[Digest::MD5.hexdigest(line)] = line
+      entries << line
       pid = cpid
     end
     process_pfamscan_entries(entries, envelope, required_match) unless entries.empty?
@@ -883,7 +884,8 @@ private
 
   def process_pfamscan_entries(entries, envelope, required_match)
     p = nil
-    entries.each do |md5, domline|
+    entries.each do |domline|
+    #entries.each do |md5, domline|
       (seq_le, # sequence length, custom field
        seq_id, # seq  id
        aln_st, # alignment start
@@ -912,6 +914,7 @@ private
       from = (envelope) ? env_st.to_i : aln_st.to_i
       to = (envelope) ? env_en.to_i : aln_en.to_i         
       d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f, "", hmm_ac)
+      puts "Adding #{d.did}"
       p.add_domain(d)
       @total_dom_residues += (to - from)
       did = (@names) ? hmm_na : hmm_ac
