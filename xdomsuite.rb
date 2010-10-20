@@ -274,9 +274,10 @@ class Proteome
     @uniq_domains   = @domains.size
     @current_prot = 0
     @domains2go = nil
+    @cluster2proteins = Hash.new
   end
 
-  attr_reader :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains, :clans, :names
+  attr_reader :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains, :clans, :names, :cluster2proteins
 
   def clans=(var)
     return if var == @clans
@@ -298,6 +299,12 @@ class Proteome
     @proteins.values.each {|p| p.names = var}
     update_arrangements()
     update_domains()
+  end
+
+  # return a list of protein objects associated to the given cluster
+  def find_proteins_by_cluster(clusterid)
+    return [] unless @cluster2proteins.key?(clusterid)
+    return @cluster2proteins[clusterid].collect{|pid| @proteins[pid]}
   end
 
   # return a list of domain instances of a specific id
@@ -605,6 +612,7 @@ class Proteome
         pid = str[0,str.index("(")]
         next unless @proteins.include?(pid)
         @proteins[pid].orthomcl_clusters << clusterid
+        (@cluster2proteins[clusterid] ||= []) << pid
         added += 1
       end
     end
