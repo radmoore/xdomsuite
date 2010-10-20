@@ -798,7 +798,7 @@ class Proteome
   # is now deprecated and will be
   # removed in subsequent commits
   def simple_overlap_resolution
-    STDERR.puts "*** Method #{simple_overlap_resolution} is deprecated. Use resolve_overlaps instead"
+    STDERR.puts "*** Method simple_overlap_resolution is deprecated. Use resolve_overlaps instead"
     total_domains = 0
     @proteins.values.each {|p| 
       p.simple_overlap_resolution
@@ -1175,7 +1175,9 @@ class Protein
   end
 
 
+ # ADM comment: Do not like the use of bitscore below
  def resolve_overlaps
+    raise "It is not recommened to resolve overlaps _after_ repeat collapsing" if self.collapsed?
     while self.has_overlapping_domains?
       # 1. identify region where domain coverage > 1
       start = 0
@@ -1187,6 +1189,7 @@ class Protein
       overlappingDomains = self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}
       # 3. find most significant domain in this set
       overlappingDomains.sort!{|d1,d2| d1.bitscore <=> d2.bitscore}
+      #overlappingDomains.sort!{|d1,d2| d1.evalue <=> d2.evalue}
       best = overlappingDomains.last
       # 4. remove all domains in the set that overlap with the best domain
       start, stop = best.from, best.to
@@ -1202,7 +1205,7 @@ class Protein
   # This method is deprecated and will 
   # be removed in a future commit
   def simple_overlap_resolution
-    STDERR.puts "*** Method #{simple_overlap_resolution} is to be removed. Use #{resolve_overlaps} instead"
+    STDERR.puts "*** Method >simple_overlap_resolution< is to be removed. Use >resolve_overlaps< instead"
     pos = 0
     pdom = cdom = nil
     deleted = Array.new
