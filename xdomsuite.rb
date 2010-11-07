@@ -740,7 +740,7 @@ class Proteome
   # no larger than thres to a query protein. Currently only
   # edit distance supported.
   # TODO:
-  # * does not work
+  # * jaccard does not work
   # * very slow
   def find_by_similarity(query_prot, thres=2, limit=100, method='edit')
     raise "Invalid method #{method}. Currently only 'edit' is supported" unless (method == 'edit')
@@ -920,10 +920,12 @@ private
       @domains[did] = Array.new unless (@domains.member?(did))
       @total_domains += 1 if (@domains[did] << p.pid)
     end
-    @arrangements[p.arrstr] = Array.new unless (@arrangements.has_key?(p.arrstr))
-    @arrangements[p.arrstr] << p.pid
-    @total_prot_length += p.length
-    @proteins[p.pid] = p
+		unless (p.domains.empty?)
+    	@arrangements[p.arrstr] = Array.new unless (@arrangements.has_key?(p.arrstr))
+    	@arrangements[p.arrstr] << p.pid
+    	@total_prot_length += p.length
+    	@proteins[p.pid] = p
+		end
   end
 
 
