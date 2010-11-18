@@ -390,8 +390,8 @@ class Proteome
   end
 
   # returns a hash of all domains, where key = id and value = Domain instance
-  def domains_hash(type=nil)
-    return self.domains(did=nil, type=type)
+  def domains_hash
+    return @domains
   end
 
   # returns a hash of all proteins, where key = id and value = Protein instance
@@ -505,7 +505,9 @@ class Proteome
   # In place version of filter_by_type 
 	def filter_by_type!(type)
 		@proteins.values.each {|p| p.type_filter!(type)}		
-    @domains = self.domains(type=type)
+    typedomains = self.domains(nil, type).collect{|d| d.did}
+    alldids = @domains.keys
+    alldids.each{|did| @domains.delete(did) unless typedomains.include?(did)}
     update_arrangements()
     return
 	end
