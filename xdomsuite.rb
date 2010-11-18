@@ -36,7 +36,6 @@
 # rv 2.4a
 
 require 'ftools'
-require 'benchmark'
 #require 'digest/md5'
 
 
@@ -391,8 +390,8 @@ class Proteome
   end
 
   # returns a hash of all domains, where key = id and value = Domain instance
-  def domains_hash
-    return @domains
+  def domains_hash(type=nil)
+    return self.domains(did=nil, type=type)
   end
 
   # returns a hash of all proteins, where key = id and value = Protein instance
@@ -506,6 +505,7 @@ class Proteome
   # In place version of filter_by_type 
 	def filter_by_type!(type)
 		@proteins.values.each {|p| p.type_filter!(type)}		
+    @domains = self.domains(type=type)
     update_arrangements()
     return
 	end
