@@ -1072,6 +1072,18 @@ class Protein
     return true 
   end  
 
+  # returns a string that represents all domains and the protein sequence fragment in fasta format
+  def domain_seqs_to_fasta
+    text = String.new
+    unless @domains.empty?
+      @domains.each do |dom|
+        text << ">#{@pid}##{dom.did} #{dom.from}:#{dom.to} #{dom.evalue}\n"
+        text << "#{dom.sequence}\n"
+      end
+    end
+    return text
+  end
+
   def prot_dom_coverage
     posHash = Hash.new(0)
     self.domains.each do |domain|
