@@ -36,7 +36,6 @@
 # rv 2.4a
 
 require 'ftools'
-require 'benchmark'
 #require 'digest/md5'
 
 
@@ -136,7 +135,7 @@ class Parser
       did = did.split('.')[0] if did.count(".") > 0 # (/.+\.\d+/.match(did))
       @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
       p = @proteins[seq_id]
-      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f)
+      d = Domain.new(env_st.to_i, env_en.to_i, did, dom_ty, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f)
       p.add_domain(d)
     end
     hmmout.close
@@ -169,7 +168,7 @@ class Parser
       did = did.split('.')[0] if did.count(".") > 0 # (/.+\.\d+/.match(did))
       @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
       p = @proteins[seq_id]
-      d = Domain.new(env_st.to_i, env_en.to_i, did, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f)
+      d = Domain.new(env_st.to_i, env_en.to_i, did, dom_ty, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f)
       p.add_domain(d, false)
     end
     hmmout.close
@@ -506,6 +505,9 @@ class Proteome
   # In place version of filter_by_type 
 	def filter_by_type!(type)
 		@proteins.values.each {|p| p.type_filter!(type)}		
+    typedomains = self.domains(nil, type).collect{|d| d.did}
+    alldids = @domains.keys
+    alldids.each{|did| @domains.delete(did) unless typedomains.include?(did)}
     update_arrangements()
     return
 	end
@@ -921,7 +923,7 @@ private
       next if (((100 / hmm_ln.to_f) * (hmm_en.to_f - hmm_st.to_f)) < required_match)
       from = (envelope) ? env_st.to_i : aln_st.to_i
       to = (envelope) ? env_en.to_i : aln_en.to_i         
-      d = Domain.new(from, to, hmm_na, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f, "", hmm_ac)
+      d = Domain.new(from, to, hmm_na, dom_ty, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f, "", hmm_ac)
       p.add_domain(d)
       @total_dom_residues += (to - from)
       did = (@names) ? hmm_na : hmm_ac
@@ -955,7 +957,8 @@ private
         end
         (from, to, did, evalue) = line.split
         clan = nil
-        domain = Domain.new(from.to_i, to.to_i, did, evalue.to_f, protein.pid, clan)
+        dom_ty = nil
+        domain = Domain.new(from.to_i, to.to_i, dom_ty, did, evalue.to_f, protein.pid, clan)
         @total_dom_residues += (to.to_i-from.to_i)
         @domains[did] = Array.new unless (@domains.member?(did))
         @total_domains += 1 if (@domains[did].push(protein.pid))
@@ -1068,6 +1071,18 @@ class Protein
     return false if posHash.values.reject{|e| e == 0 or e == 1}.count == 0 
     return true 
   end  
+
+  # returns a string that represents all domains and the protein sequence fragment in fasta format
+  def domain_seqs_to_fasta
+    text = String.new
+    unless @domains.empty?
+      @domains.each do |dom|
+        text << ">#{@pid}##{dom.did} #{dom.from}:#{dom.to} #{dom.evalue}\n"
+        text << "#{dom.sequence}\n"
+      end
+    end
+    return text
+  end
 
   def prot_dom_coverage
     posHash = Hash.new(0)
@@ -1439,7 +1454,7 @@ class Protein
           if (repno >= repunit)
 						@collapsed = true
 
-            c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, prev_dom.cid, nil, "#{repno} collapsed repeats", prev_dom.acc)
+            c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, prev_dom.dom_type, -1, self.pid, prev_dom.cid, nil, "#{repno} collapsed repeats", prev_dom.acc)
             p.add_domain(c_dom)
            # doms.push(c_dom)
             rep_doms.clear
@@ -1458,7 +1473,7 @@ class Protein
     end
     if (repno >= repunit)
 			@collapsed = true
-      c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, -1, self.pid, prev_dom.cid, nil, "#{repno} collapsed repeats", prev_dom.acc)
+      c_dom = Domain.new(rep_doms[0].from, prev_dom.to, prev_dom.did, prev_dom.dom_type, -1, self.pid, prev_dom.cid, nil, "#{repno} collapsed repeats", prev_dom.acc)
       p.add_domain(c_dom)
      # doms.push(c_dom)
     elsif (repno > 1)
@@ -1680,10 +1695,11 @@ class Domain
   CTYPE = /^COILS.+/
   DTYPE = /^DIS.+/
 
-  def initialize (from, to, did, evalue, pid=nil, clanid=nil, bitscore=nil, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
+  def initialize (from, to, did, dom_type, evalue, pid=nil, clanid=nil, bitscore=nil, comment=String.new, acc=String.new, go=String.new, sequence=String.new)
     @from = from
     @to = to
     @did = did
+    @dom_type = dom_type
     @acc = acc
     @go = go
     @cid = clanid
@@ -1696,7 +1712,7 @@ class Domain
     @comment = comment
     @length = @to - @from
   end
-  attr_accessor :from, :to, :did, :acc, :go, :cid, :evalue, :bitscore, :sequence, :type, :pid, :comment, :length
+  attr_accessor :from, :to, :did, :acc, :go, :cid, :evalue, :bitscore, :sequence, :type, :pid, :comment, :length, :dom_type
 
   def fasta_seq
     return (sequence.empty?) ?
