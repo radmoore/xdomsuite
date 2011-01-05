@@ -1088,7 +1088,7 @@ class Protein
       raise "Class variable 'clans' must of type boolean"
     end
     @clans = var
-    self.update_arrstr() if @clans != var
+    self.update_arrstr() 
   end
 
   def names=(var)
