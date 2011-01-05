@@ -1073,6 +1073,8 @@ class Protein
   end  
 
   # returns a string that represents all domains and the protein sequence fragment in fasta format
+  # COMMENT ADM: I do not like this - this should be in the Domain class (in fact is, see
+  # Domain.fasta_seq), and should only be triggered from here. 
   def domain_seqs_to_fasta
     text = String.new
     unless @domains.empty?
