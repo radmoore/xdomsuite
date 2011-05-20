@@ -1162,22 +1162,32 @@ class Protein
 		(@domains.each {|d| uniq[d] = (uniq.has_key?(d)) ? uniq[d].succ! : 1 }).size
 	end
 
-  # Returns an array of domain instances that co-occur
+  # Returns an array of domain instances that neighbor
   # with the domain identified by +did+. If +uniq+ is true,
-  # then only unique co-occurrences will be returned.
-  # If there are no unique co-occurrences, an empty
+  # then only unique neighbors will be returned.
+  # If there are no (unique) neigbhors, an empty
   # Array will be returned (eg. single domain protein) 
   def neighbors(did, uniq = true)
-    seen = Hash.new(0)
-    n = Array.new
-    self.domains.each do |d| 
-      next if d.did == did 
-      next if (uniq && (seen.has_key?(d.did)))
-      n << d
-      seen[d.did] += 1
-    end
-    return n
+    # TODO
   end
+
+  # Returns an array of domain instances that co-occur
+  # with the domain identified by +did+. If +uniq+ is true,
+  # then only unique co-occurrences will be reported.
+  # If there are no (unique) co-occs, an empty
+  # Array will be returned (eg. single domain protein) 
+  def get_cooc_doms(did, uniq = true)
+    s = Hash.new(0)
+    a = Array.new
+    self.domains.each {|d| 
+      next if (did == d.did)
+      next if ( uniq && (s.has_key?(d.did)) )
+      s[d.did] += 1
+      a << d
+    }
+    return a
+  end
+
 
   # Wrapper for type_filter. Returns an array of Domain objects of type PfamA, or an empty array if no PfamA domains are found 
 	def pfam_A
@@ -1431,11 +1441,6 @@ class Protein
     return doms
   end
   
-  def get_cooc_doms(did)
-    a = Array.new
-    self.domains.each {|d| next if (did == d.did); a << d}
-    return a
-  end
 
   # TODO:
   # there are some problems with d.comment being nil
@@ -1456,10 +1461,12 @@ class Protein
     head+doms
   end
 
+  # Returns that sequence associated with +self+ in fasta format,
+  # or +nil+ if no sequence is defined.
   def fasta_seq
     return (sequence.empty?) ?
-    false :
-    ">#{self.pid}\t#{self.species}\t#{self.length}\n#{self.sequence}"
+    nil :
+    ">#{self.pid}\n#{self.sequence}"
   end
 
   # TODO: check if required (why not attr_reader?)
@@ -1692,10 +1699,6 @@ class Protein
     @domains.each{|d| d.sequence = seq[(d.from-1)..(d.to-1)]}
   end
   
-  def fasta_seq
-    return ">#{self.pid}\n#{self.sequence}\n"
-  end
-
   protected
 
   def update_arrstr
@@ -1767,7 +1770,7 @@ class Domain
 
   def fasta_seq
     return (sequence.empty?) ?
-      false :
+      nil :
       ">#{self.pid}.#{self.did}\t#{self.from}-#{self.to}\n#{self.sequence}"
   end
 
