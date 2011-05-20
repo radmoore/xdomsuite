@@ -1,5 +1,5 @@
 #!/usr/bin/ruby -w
-
+# this is a change
 #==xdomsuite - A suite of simple procedures for working with domain data
 # 
 # The xdomsuite contains 2 primary classes, and two 'utility' classes. The way I use these classes, is that I create either a xdom object
@@ -186,7 +186,7 @@ class Parser
       p = d = nil
       length = 0
       
-      next if (/^#{@comment}/.match(line) || /^$/.match(line))
+      next if ( (/^#{@comment}/.match(line))  || (/^$/.match(line)))
 
       while(line = hmmout.gets)
         line.chomp!
@@ -1387,7 +1387,7 @@ class Protein
     doms = Array.new
     return doms unless self.member?(did)
     @domains.each do |d|
-      doms.push(d) if (d.did == id)
+      doms.push(d) if (d.did == did)
     end
     return doms
   end
@@ -1415,6 +1415,12 @@ class Protein
       doms += (d.comment.nil? or d.comment.empty?) ? "\n" : "\t;#{d.comment}\n"
     end
     head+doms
+  end
+
+  def fasta_seq
+    return (sequence.empty?) ?
+    false :
+    ">#{self.pid}\t#{self.species}\t#{self.length}\n#{self.sequence}"
   end
 
   # TODO: check if required (why not attr_reader?)
@@ -1593,7 +1599,7 @@ class Protein
       j -= 1
     end
 
-    # more edit operations that sum of domains in proteins = arrangements
+    # more edit operations than sum of domains in proteins = arrangements
     # do not share any domains.
     return (p1.length + p2.length <= edit_distance) ?  -1 : edit_distance
 
