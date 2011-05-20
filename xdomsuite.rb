@@ -317,6 +317,22 @@ class Proteome
     pids.collect{|pid| @proteins[pid]}.collect{|prot| doms += prot.domains}
     return doms.select{|dom| dom if dom.did == did}
   end
+  
+  # returns the first domain instance that can be found in the proteome given a did
+  # this is mostly useful to look up general properties of this domain such as type, dom_type etc.
+  def find_first_dom(did)
+    return nil unless @domains[did]
+    pid = @domains[did].first
+    dom = nil
+    @proteins[pid].domains.each do |d|
+      if d.did == did
+        dom = d
+        break
+      end
+    end
+    return dom
+  end
+
 
   def get_orthomcl_clusters_by_did(did)
     return nil unless @domains[did]
@@ -792,10 +808,10 @@ class Proteome
   # TODO:
   # Allow 'modes' of overlap resolution
   # eg max. coverage, max. evalue, type dependant
-  def resolve_overlaps
+  def resolve_overlaps(keep_pfamB=false)
     total_domains = 0
     @proteins.values.each {|p| 
-      p.resolve_overlaps
+      p.resolve_overlaps(keep_pfamB)
       total_domains += p.domains.length
     }
     update_domains()
@@ -1203,8 +1219,16 @@ class Protein
 
 
  # ADM comment: Do not like the use of bitscore below
- def resolve_overlaps
+ # LW: agree, now using evalue instead of bitscore.
+ # if keep_pfamB is true, pfamB domains are retained in case of overlaps and 
+ # treated with the same priority as pfamA domains. thus, a pfamB domain
+ # with a lower evalue can eliminate a pfamA domain.
+ # if keep_pfamB is false and overlaps are found between the domains,
+ # all pfamB domains are eliminated and the actual domain overlap resolution
+ # is then applied only to the pfamA domains that are left.
+ def resolve_overlaps(keep_pfamB=false)
     raise "It is not recommened to resolve overlaps _after_ repeat collapsing" if self.collapsed?
+    self.type_filter!("A") if self.has_overlapping_domains? and not keep_pfamB
     while self.has_overlapping_domains?
       # 1. identify region where domain coverage > 1
       start = 0
@@ -1215,15 +1239,11 @@ class Protein
       # 2. identify all domains that overlap with this region
       overlappingDomains = self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}
       # 3. find most significant domain in this set
-      overlappingDomains.sort!{|d1,d2| d1.bitscore <=> d2.bitscore}
-      #overlappingDomains.sort!{|d1,d2| d1.evalue <=> d2.evalue}
-      best = overlappingDomains.last
+      overlappingDomains.sort!{|d1,d2| d1.evalue <=> d2.evalue}
       # 4. remove all domains in the set that overlap with the best domain
+      best = overlappingDomains.first
       start, stop = best.from, best.to
-      self.domains.select{|d| d if d.overlaps_with_positions?(start,stop)}.each do |d|
-        next if d == best
-        self.domains.delete(d)
-      end
+      self.domains.select{|d| d if d.overlaps_with_positions?(start,stop) and d != best}.each{|d| self.domains.delete(d) }
     end
     return self
   end
@@ -1391,7 +1411,7 @@ class Protein
     end
     return doms
   end
-
+  
   def get_cooc_doms(did)
     a = Array.new
     self.domains.each {|d| next if (did == d.did); a << d}
@@ -1651,6 +1671,10 @@ class Protein
     @sequence = seq
     @length = seq.length
     @domains.each{|d| d.sequence = seq[(d.from-1)..(d.to-1)]}
+  end
+  
+  def fasta_seq
+    return ">#{self.pid}\n#{self.sequence}\n"
   end
 
   protected
