@@ -1077,10 +1077,12 @@ class Protein
   attr_accessor :length, :species, :comment, :sep, :pfamb, :chromosomal_locations, :goterms, :orthomcl_clusters
 	attr_reader :deleted, :pid, :arrstr, :clans, :names, :sequence
   
+  # returns true if +self+ is multi-domain
   def is_multidomain?
     return @domains.size > 1
   end
 
+  # returns true if +self+ contains domains that overlap
   def has_overlapping_domains?
     return false if self.domains.count < 2
     posHash = self.prot_dom_coverage
@@ -1159,6 +1161,23 @@ class Protein
 		uniq = Hash.new
 		(@domains.each {|d| uniq[d] = (uniq.has_key?(d)) ? uniq[d].succ! : 1 }).size
 	end
+
+  # Returns an array of domain instances that co-occur
+  # with the domain identified by +did+. If +uniq+ is true,
+  # then only unique co-occurrences will be returned.
+  # If there are no unique co-occurrences, an empty
+  # Array will be returned (eg. single domain protein) 
+  def neighbors(did, uniq = true)
+    seen = Hash.new(0)
+    n = Array.new
+    self.domains.each do |d| 
+      next if d.did == did 
+      next if (uniq && (seen.has_key?(d.did)))
+      n << d
+      seen[d.did] += 1
+    end
+    return n
+  end
 
   # Wrapper for type_filter. Returns an array of Domain objects of type PfamA, or an empty array if no PfamA domains are found 
 	def pfam_A
