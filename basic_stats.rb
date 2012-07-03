@@ -12,6 +12,7 @@ end
 
 # Standard deviation
 def stdv(values)
+  return 0.0 if values.size == 1
   values = string_array2int_array(values)
 	aver = mean(values)
 	var = values.inject(0) {|var, x| var += (x - aver)** 2}

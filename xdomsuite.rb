@@ -276,7 +276,7 @@ class Proteome
     @cluster2proteins = Hash.new
   end
 
-  attr_reader :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains, :clans, :names, :cluster2proteins
+  attr_reader :filename, :evalue, :species, :total_proteins, :total_domains, :uniq_domains, :names, :cluster2proteins
 
   def clans=(var)
     return if var == @clans
@@ -380,9 +380,13 @@ class Proteome
 	end
 
   # Returns a list of all arrangements as an array of strings
-  def arrangements
-    @arrangements.keys
+  def arrangements(pfamb = true)
+    return @arrangements.keys if pfamb
+    arrs = Hash.new(0)
+    @proteins.values.each{ |p| arrs[ (p.pfam_A.collect{|d| d.did}).join(';') ] += 1 unless p.pfam_A.empty? }
+    return arrs.keys
   end
+
 
   # Returns an array of domain objects
   # 
@@ -405,7 +409,7 @@ class Proteome
     return doms.flatten
   end
 
-  # returns a hash of all domains, where key = id and value = Domain instance
+  # returns a hash of all domains, where key = id and value = protein id
   def domains_hash
     return @domains
   end
@@ -731,9 +735,11 @@ class Proteome
   # Returns _nil_ if no protein with domain _did_ is present in _self_
   def find_uniq_arr_by_dom(did, collapse=true)
     uniq = Hash.new
-    prots = self.find_arr_by_dom(did)
+    #prots = self.find_arr_by_dom(did)
+    prots = @domains[did]
     return nil if prots.nil?
-    prots.each do |p|
+    prots.each do |pid|
+      p = @proteins[pid]
       p = p.collapse if collapse
       next if uniq.has_key?(p.arrstr)
       uniq[p.arrstr] = p
@@ -852,11 +858,14 @@ private
   # TODO: perhaps this can update domains as well
 	def update_arrangements
 		new_arr = Hash.new
+    new_prots = Hash.new
 		@proteins.each do |pid, p|
 			new_arr[p.arrstr] = Array.new unless (new_arr.has_key?(p.arrstr))
 			new_arr[p.arrstr].push(pid)
+      new_prots[p.pid] = p
 		end
 		@arrangements = new_arr
+    @proteins = new_prots
 	end
 
   # TODO: when clan or domains is changed in an instance of
@@ -1067,7 +1076,7 @@ class Protein
 		@deleted = nil
 		@collapsed = false
     @sep = ';'
-    @clans = true
+    @clans = false
     @names = true
     @pfamb = false
     @chromosomal_locations = Hash.new
@@ -1075,7 +1084,7 @@ class Protein
     @orthomcl_clusters = Array.new
   end
   attr_accessor :length, :species, :comment, :sep, :pfamb, :chromosomal_locations, :goterms, :orthomcl_clusters
-	attr_reader :deleted, :pid, :arrstr, :clans, :names, :sequence
+	attr_reader :deleted, :pid, :arrstr, :names, :sequence
   
   # returns true if +self+ is multi-domain
   def is_multidomain?
@@ -1498,6 +1507,7 @@ class Protein
     rep_doms = Array.new
    # doms = Array.new
     p = Protein.new(@pid, @sequence, @species, @comment)
+    p.clans = @clans
     self.domains.each do |d|
 
       unless (prev_dom.nil?)
