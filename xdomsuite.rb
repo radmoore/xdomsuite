@@ -50,166 +50,6 @@ class Array
 end
 
 
-
-#=== Parser
-#Class for creating protein and domain objects directly from hmmer output. 
-#Once called, Parser returns an Array of protein objects
-#
-#==== Usage
-# 
-# require 'xdomsuite'
-# 
-# parser = Parser.new('/path/to/file') 
-# proteins = parser.pfamscan(0.0001)
-# proteins.each {|p| puts p.pid }
-# 
-#====Open Issues /  TODOs
-# 
-# * Currently only supports custom pfamscan output 
-# * Check file type validity
-class Parser
-
-  # Returns an instance of the Parser class.
-  def initialize(filename)
-    @filename = filename
-    @file_ext = File.extname(@filename)
-    @file_bn = File.basename(@filename, @file_ext)
-    @comment = '#'
-    @proteins = Hash.new
-  end
-
-  attr_reader :filename, :file_ext, :file_bn
-  attr_accessor :comment
-
-  # Calls the pfamscan parser method (new version), and returns an Array of protein objects. Domain must have
-  # a score better than +evalue+ before they are included. If +name+ is +true+, then the domain name is used.
-  # Otherwise, the domain accession number is used
-  # 
-  # The fields in the pfam_scan output file are
-  # 
-  # * length (custom filed to maintain protein length)
-  # * seq id
-  # * alignment start
-  # * alignment end
-  # * envelope start
-  # * envelope end
-  # * hmm acc
-  # * hmm name
-  # * type 
-  # * hmm start
-  # * hmm end
-  # * hmm length
-  # * bit score
-  # * E-value
-  # * significance
-  # * Clan
-  # * Predicted_active_site_residues
-  def pfamscan(evalue=10, name=true, length=true)
-    p = nil
-    Benchmark.bmbm do |b|
-    b.report("with update") {
-    hmmout = File.open(@filename, "r")
-    while(line = hmmout.gets)
-      next if line.length == 1 or line[0,@comment.length] == @comment
-      line.chomp!
-      (seq_le, # sequence length, custom field
-			 seq_id, # seq  id
-       aln_st, # alignment start
-       aln_en, # alignment end
-       env_st, # envelope start
-       env_en, # envelope end
-       hmm_ac, # hmm acc
-       hmm_na, # hmm name
-       dom_ty, # type
-       hmm_st, # hmm start
-       hmm_en, # hmm end
-       hmm_ln, # hmm length
-       bit_sc, # bit score
-       eva_ht, # e-value
-       sig_ht, # significance
-       cla_id, # clan
-       pre_as) = line.split  # predicted_active_site_residues
-
-      next if (eva_ht.to_f >= evalue)
-      did = (name) ? hmm_na : hmm_ac
-      did = did.split('.')[0] if did.count(".") > 0 # (/.+\.\d+/.match(did))
-      @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
-      p = @proteins[seq_id]
-      d = Domain.new(env_st.to_i, env_en.to_i, did, dom_ty, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f)
-      p.add_domain(d)
-    end
-    hmmout.close
-    }
-    b.report("without update") {
-    hmmout = File.open(@filename, "r")
-    while(line = hmmout.gets)
-      next if line.length == 1 or line[0,@comment.length] == @comment
-      line.chomp!
-      (seq_le, # sequence length, custom field
-			 seq_id, # seq  id
-       aln_st, # alignment start
-       aln_en, # alignment end
-       env_st, # envelope start
-       env_en, # envelope end
-       hmm_ac, # hmm acc
-       hmm_na, # hmm name
-       dom_ty, # type
-       hmm_st, # hmm start
-       hmm_en, # hmm end
-       hmm_ln, # hmm length
-       bit_sc, # bit score
-       eva_ht, # e-value
-       sig_ht, # significance
-       cla_id, # clan
-       pre_as) = line.split  # predicted_active_site_residues
-
-      next if (eva_ht.to_f >= evalue)
-      did = (name) ? hmm_na : hmm_ac
-      did = did.split('.')[0] if did.count(".") > 0 # (/.+\.\d+/.match(did))
-      @proteins[seq_id] = Protein.new(seq_id, seq_le.to_i) unless(@proteins.has_key?(seq_id))
-      p = @proteins[seq_id]
-      d = Domain.new(env_st.to_i, env_en.to_i, did, dom_ty, eva_ht.to_f, p.pid, cla_id, bit_sc.to_f)
-      p.add_domain(d, false)
-    end
-    hmmout.close
-    }
-    end
-    return @proteins.values
-  end
-
-
-
-  # TODO: complete
-  def hmmscan(evalue=10, name=true, custom=true)
-      
-      hmmout = File.open(@filename, "r")
-      p = d = nil
-      length = 0
-      
-      next if ( (/^#{@comment}/.match(line))  || (/^$/.match(line)))
-
-      while(line = hmmout.gets)
-        line.chomp!
-        fields = line.split
-        length = fields.shift if (/\d+/.match(fields[0]))
-        next if (fields[12].to_f >= evalue)
-        name = (name) ? fields[6] : fields[5]
-        @proteins[fields[0]] = Protein.new(fields[0], length) unless (@proteins.has_key?(fields[0]))
-        p = @proteins[fields[0]]
-      end
-
-      hmmout.close
-        
-  end
-
-  private
-
-  # Check file type for validity
-  def validate(type)
-  end
-
-end
-
 #=== Proteome
 #Class for creating a proteome-like object from a xdom file. Provides methods for iteration and filtering, sequence association
 #collapsing repeats, retreiving statistics etc 
@@ -332,7 +172,6 @@ class Proteome
     end
     return dom
   end
-
 
   def get_orthomcl_clusters_by_did(did)
     return nil unless @domains[did]
@@ -522,7 +361,8 @@ class Proteome
     return newxdom
 	end
 
-  # In place version of filter_by_type 
+  # Removes from self all domains that are not of type _type_.
+  # See Protein.type_filter
 	def filter_by_type!(type)
 		@proteins.values.each {|p| p.type_filter!(type)}		
     typedomains = self.domains(nil, type).collect{|d| d.did}
@@ -532,23 +372,9 @@ class Proteome
     return
 	end
 
-  # Returns a Hash with the frequency counts for all known _types_ of domains
-  # present in _self_
-  #
-  # Example return:
-  #  { 'A' => 4323, 'B' => 32123 }
-  #
-  # Issues
-  # * Not sure if this method is really useful
-	def dom_types_freq
-		types = Hash.new
-		@proteins.values.each do |p|
-			p.domains.each {|d| types[d.type] = (types.has_key?(d.type)) ? types[d.type].succ : 1 }
-		end
-		return types.sort{|a, b| b[1] <=> a[1]}.to_h
-	end
-
-  # Returns the average number of domains present in the proteins of self. If _num_ is _true_, returns a float. If _num_ is _false_, returns a formatted string
+  # Returns the average number of domains present in the proteins of self. 
+  # If _num_ is _true_, returns a float. 
+  # If _num_ is _false_, returns a formatted string
 	def average_domain_no(num = false)
 		dno = ( (@proteins.values.inject(0){ |sum, p| sum += p.domains.size.to_f}) / @proteins.size.to_f )
    	return num ? dno : sprintf('%.2f', dno)
@@ -626,8 +452,6 @@ class Proteome
       clusterid = defpart[0,defpart.index("(")]
       nGenes = defpart[defpart.index("(")+1..defpart.index(" genes")-1]
       nTaxa = defpart[defpart.index(" genes,")+7..defpart.index(" taxa")-1]
-      #puts "line: #{line}"
-      #puts "elements: #{elements.inspect}"
       elements.split.each do |str|
         species = str[str.index("(")+1..str.index(")")-1]
         next unless species == @species
@@ -826,32 +650,10 @@ class Proteome
     return nil
   end
 
-  # with the new method by lo, this
-  # is now deprecated and will be
-  # removed in subsequent commits
-  def simple_overlap_resolution
-    STDERR.puts "*** Method simple_overlap_resolution is deprecated. Use resolve_overlaps instead"
-    total_domains = 0
-    @proteins.values.each {|p| 
-      p.simple_overlap_resolution
-      total_domains += p.domains.length
-    }
-    update_domains()
-	  update_arrangements()
-    @total_domains = total_domains
-    return nil
-  end
-
-  # TODO
-  def annotate_with_context(xdom)
-
-  end
-
   def add_protein(p)
     @proteins[p.pid] = p unless @proteins.member?(p.pid)
     @total_proteins += 1
   end
-
 
 private
 
@@ -1197,7 +999,6 @@ class Protein
     return a
   end
 
-
   # Wrapper for type_filter. Returns an array of Domain objects of type PfamA, or an empty array if no PfamA domains are found 
 	def pfam_A
     return @domains.select{|d| d.type == 'A'}
@@ -1285,171 +1086,6 @@ class Protein
     end
     return self
   end
-
-
-  # This method is deprecated and will 
-  # be removed in a future commit
-  def simple_overlap_resolution
-    STDERR.puts "*** Method >simple_overlap_resolution< is to be removed. Use >resolve_overlaps< instead"
-    pos = 0
-    pdom = cdom = nil
-    deleted = Array.new
-    until (pos == self.total_domains)
-      cdom = self.domains[pos]
-      if (pdom.nil?)
-        pdom = cdom
-        pos += 1
-        next
-      end
-      if (pdom.to > cdom.from)
-        if (pdom.type == cdom.type)
-          if (cdom.evalue <= pdom.evalue)
-            self.domains.delete(pdom)
-            deleted << pdom
-          else
-            self.domains.delete(cdom)
-            deleted << cdom
-          end
-        else 
-          if (pdom.type == 'B')
-            self.domains.delete(pdom)
-            deleted << pdom
-          elsif (cdom.type == 'B')
-            self.domains.delete(cdom)
-            deleted << cdom
-          else
-            if (cdom.evalue <= pdom.evalue)
-              self.domains.delete(pdom)
-              deleted << pdom
-            else
-              self.domains.delete(cdom)
-              deleted << cdom
-            end
-          end
-        end
-        cdom = pdom = nil
-        pos = 0
-        next
-      end
-      pos += 1
-      pdom = cdom
-    end
-    self.update_arrstr
-    return self
-  end
-
-  # Allows control over overlap resolution
-  # by setting type preference (currently only
-  # A or B) and evalue or coverage maximization.
-  #
-  # TODO
-  # * double check
-  # + incorp. switch for simple overlap res?
-  # + sanitize
-  # + shorten, check effciency
-  # ACON: preference pfamA, maximize evalue
-  # ACOV: preference pfamA, maximize coverage
-  # BCON: preference pfamB, maximize evalue
-  # BCOV: preference pfamB, maximize coverage
-  def resolve_overlaps_old(simple = true, mode=nil)
-    return simple_overlap_resolution() if simple
-
-    raise "Please select overlap resolution mode: AE=0, AC=1, BE=2, BC=3" if (mode.nil?)
-    raise "Invalid resolution mode: AE=0, AC=1, BE=2, BC=3" unless ((0 <= mode) && (mode <= 3))
-
-    pos = 0
-    pdom = nil
-    deleted = Array.new
-    until (pos == self.total_domains)
-      cdom = self.domains[pos]
-      if ( pdom.nil? || (pdom == cdom) || (cdom.from > pdom.to) )
-        pdom = cdom
-        pos += 1
-        next
-      end
-      unless (cdom.type == pdom.type)
-        if (((mode == 0)||(mode == 1)))
-          if (cdom.type == 'B')
-            deleted.push(cdom)
-            self.domains.delete(cdom)
-          else
-            deleted.push(pdom)
-            self.domains.delete(pdom)
-          end
-         elsif ( (mode == 2)||(mode == 3) )
-          if (cdom.type == 'A')
-            deleted.push(cdom)
-            self.domains.delete(cdom)
-          else
-            deleted.push(pdom)
-            self.domains.delete(pdom)
-          end
-        end
-        pos = 0
-        pdom = nil
-        next
-      end
-			# in mode 1, 3: if length is equal, no conflict resolution possible
-			# than resolve by evalue anyways
-      if (mode%2 == 0 || (cdom.length == pdom.length))
-        if (cdom.evalue >= pdom.evalue)
-          deleted.push(cdom)
-          self.domains.delete(cdom)
-        else
-          deleted.push(pdom)
-          self.domains.delete(pdom)
-        end
-      else
-        if (cdom.length < pdom.length)
-          deleted.push(cdom)
-          self.domains.delete(cdom)
-        else
-          deleted.push(pdom)
-          self.domains.delete(pdom)
-        end
-      end
-      pos = 0
-      pdom = nil
-    end
-		# if there are interdomainic regions...
-		unless (self.get_interdoms.keys.length == 0)
-    	pdom = nil
-    	self.domains.each_index do |pos|
-      	cdom = self.domains[pos]
-      	unless (pdom.nil?)
-					# try to fit some of the removed domains
-					# into the final arrangement
-      		deleted.each do |remdom|
-	       		next unless ((remdom.from > pdom.to) && (remdom.to < cdom.from))
-	        	self.domains.insert(pos, remdom)
-	        	deleted.delete(remdom)
-	      	end
-    		end
-				pdom = cdom
-			end
-			# TODO
-			# this should be tried more than once
-			# attempt to drop a removed domain into the last position
-   		deleted.each do |remdom|
-   			next unless ((remdom.from > pdom.to) && (remdom.to < @length))
-	    	self.domains.push(remdom)
-	      deleted.delete(remdom)
-			end
-			@deleted = deleted
-		end
-		self.update_arrstr
-		return self
-  end
-
-  def find_doms(did)
-    doms = Array.new
-    return doms unless self.member?(did)
-    @domains.each do |d|
-      doms.push(d) if (d.did == did)
-    end
-    return doms
-  end
-  
 
   # TODO:
   # there are some problems with d.comment being nil
