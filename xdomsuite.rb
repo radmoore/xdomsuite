@@ -35,7 +35,7 @@
 #===Version
 # rv 2.4a
 
-require 'ftools'
+#require 'ftools'
 #require 'digest/md5'
 
 
@@ -785,7 +785,7 @@ private
         (from, to, did, evalue) = line.split
         clan = nil
         dom_ty = nil
-        domain = Domain.new(from.to_i, to.to_i, dom_ty, did, evalue.to_f, protein.pid, clan)
+        domain = Domain.new(from.to_i, to.to_i, did, dom_ty, evalue.to_f, protein.pid, clan)
         @total_dom_residues += (to.to_i-from.to_i)
         @domains[did] = Array.new unless (@domains.member?(did))
         @total_domains += 1 if (@domains[did].push(protein.pid))
